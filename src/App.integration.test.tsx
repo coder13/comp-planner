@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from './App';
 import { WcaCompetition } from './lib/types';
+import { queryClient } from './lib/queryClient';
 
 jest.mock('./components/SearchAreaMap', () => ({
   SearchAreaMap: () => <div data-testid="search-area-map" />,
@@ -52,6 +53,7 @@ describe('Seattle event search', () => {
 
   beforeEach(() => {
     window.localStorage.clear();
+    queryClient.clear();
     wcaRequestCount = 0;
     wcaRequestUrls = [];
     geocoderRequestCount = 0;

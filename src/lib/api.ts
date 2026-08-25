@@ -4,7 +4,8 @@ const PHOTON_ORIGIN = 'https://photon.komoot.io';
 const COMPETITIONS_PER_PAGE = 25;
 const COMPETITION_PAGE_BATCH_SIZE = 5;
 const MAX_COMPETITION_PAGES = 60;
-export const WCA_COMPETITION_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+export const WCA_COMPETITION_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+export type CompetitionCacheMode = 'cache-first' | 'network-only';
 const COMPETITION_CACHE_STORAGE_PREFIX = 'comp-planner:wca-competitions:v1:';
 const COMPETITION_SEARCH_CACHE_STORAGE_PREFIX =
   'comp-planner:wca-competition-search:v1:';
@@ -300,10 +301,12 @@ const withAbort = <T>(promise: Promise<T>, signal?: AbortSignal) => {
 
 const fetchCompetitionsFromApi = async ({
   endDate,
+  signal,
   startDate,
   countryCode,
 }: {
   endDate: string;
+  signal?: AbortSignal;
   startDate: string;
   countryCode: string;
 }) => {
@@ -322,6 +325,7 @@ const fetchCompetitionsFromApi = async ({
 
     return requestJson<WcaCompetition[]>(
       `${WCA_API_ORIGIN}/competitions?${params.toString()}`,
+      signal,
     );
   };
 
@@ -349,26 +353,30 @@ const fetchCompetitionsFromApi = async ({
 };
 
 export const fetchCompetitions = async ({
+  cacheMode = 'cache-first',
   endDate,
   signal,
   startDate,
   countryCode,
 }: {
+  cacheMode?: CompetitionCacheMode;
   endDate: string;
   signal?: AbortSignal;
   startDate: string;
   countryCode: string;
 }) => {
   const cacheKey = getCompetitionCacheKey(countryCode, startDate, endDate);
-  const memoryCached = competitionMemoryCache.get(cacheKey);
-  if (memoryCached) {
-    return withAbort(Promise.resolve(memoryCached), signal);
-  }
+  if (cacheMode === 'cache-first') {
+    const memoryCached = competitionMemoryCache.get(cacheKey);
+    if (memoryCached) {
+      return withAbort(Promise.resolve(memoryCached), signal);
+    }
 
-  const storedCompetitions = getStoredCompetitions(cacheKey);
-  if (storedCompetitions) {
-    competitionMemoryCache.set(cacheKey, storedCompetitions);
-    return withAbort(Promise.resolve(storedCompetitions), signal);
+    const storedCompetitions = getStoredCompetitions(cacheKey);
+    if (storedCompetitions) {
+      competitionMemoryCache.set(cacheKey, storedCompetitions);
+      return withAbort(Promise.resolve(storedCompetitions), signal);
+    }
   }
 
   const existingRequest = competitionInFlight.get(cacheKey);
@@ -379,6 +387,7 @@ export const fetchCompetitions = async ({
   const request = fetchCompetitionsFromApi({
     countryCode,
     endDate,
+    signal,
     startDate,
   })
     .then((competitions) => {
@@ -450,21 +459,24 @@ const storeCompetitionSearch = (
 export const searchCompetitions = async (
   query: string,
   signal?: AbortSignal,
+  cacheMode: CompetitionCacheMode = 'cache-first',
 ) => {
   const cacheKey = getCompetitionSearchCacheKey(query);
   if (!cacheKey) {
     return [];
   }
 
-  const memoryCached = competitionSearchMemoryCache.get(cacheKey);
-  if (memoryCached) {
-    return withAbort(Promise.resolve(memoryCached), signal);
-  }
+  if (cacheMode === 'cache-first') {
+    const memoryCached = competitionSearchMemoryCache.get(cacheKey);
+    if (memoryCached) {
+      return withAbort(Promise.resolve(memoryCached), signal);
+    }
 
-  const storedCompetitions = getStoredCompetitionSearch(cacheKey);
-  if (storedCompetitions) {
-    competitionSearchMemoryCache.set(cacheKey, storedCompetitions);
-    return withAbort(Promise.resolve(storedCompetitions), signal);
+    const storedCompetitions = getStoredCompetitionSearch(cacheKey);
+    if (storedCompetitions) {
+      competitionSearchMemoryCache.set(cacheKey, storedCompetitions);
+      return withAbort(Promise.resolve(storedCompetitions), signal);
+    }
   }
 
   const existingRequest = competitionSearchInFlight.get(cacheKey);
@@ -475,6 +487,7 @@ export const searchCompetitions = async (
   const params = new URLSearchParams({ q: query.trim() });
   const request = requestJson<WcaCompetitionPayload[]>(
     `${WCA_API_ORIGIN}/competitions?${params.toString()}`,
+    signal,
   )
     .then((competitions) => competitions.map(normalizeCompetition))
     .then((competitions) => {

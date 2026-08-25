@@ -1,4 +1,5 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { useIsRestoring } from '@tanstack/react-query';
 import { CityPicker } from './components/CityPicker';
 import { CompetitionEventGroup } from './components/CompetitionEventGroup';
 import { EventSummaryRow } from './components/EventSummaryRow';
@@ -42,12 +43,57 @@ import {
   isWcaAuthConfigured,
   startWcaLogin,
 } from './lib/wcaAuth';
+import {
+  fetchQueryWithOfflineFallback,
+  PAST_COMPETITION_STALE_TIME_MS,
+  queryClient,
+  queryKeys,
+} from './lib/queryClient';
 
 const DEFAULT_CITY_QUERY = 'Seattle, Washington';
 const DEFAULT_RADIUS_MILES = 50;
 const DEFAULT_DATE = getDateString();
 const LOOKBACK_OPTIONS = [3, 6, 12, 18, 24, 36];
+const APP_STATE_STORAGE_KEY = 'comp-planner:app-state:v1';
 type ViewMode = 'event' | 'competition';
+
+interface PersistedAppState {
+  asOfDate: string;
+  competitionQuery: string;
+  includeUpcoming: boolean;
+  lookbackMonths: string;
+  query: string;
+  radiusMiles: string;
+  sameCountryOnly: boolean;
+  scopeMode: SearchScopeMode;
+  selectedCity: CityLocation | null;
+  selectedWcaCompetition: WcaCompetition | null;
+  viewMode: ViewMode;
+}
+
+const readPersistedAppState = (): Partial<PersistedAppState> => {
+  if (typeof window === 'undefined') {
+    return {};
+  }
+
+  try {
+    const storedState = window.localStorage.getItem(APP_STATE_STORAGE_KEY);
+    if (!storedState) {
+      return {};
+    }
+
+    const parsedState = JSON.parse(storedState) as Partial<PersistedAppState>;
+    return parsedState && typeof parsedState === 'object' ? parsedState : {};
+  } catch {
+    return {};
+  }
+};
+
+const getStoredScopeMode = (mode: unknown): SearchScopeMode =>
+  mode === 'state' || mode === 'region' ? mode : 'radius';
+
+const getStoredViewMode = (mode: unknown): ViewMode =>
+  mode === 'competition' ? mode : 'event';
 
 const getScopeForCity = (
   mode: SearchScopeMode,
@@ -68,21 +114,41 @@ const getScopeForCity = (
   return { mode: 'radius', radiusMiles };
 };
 
+const LIVE_QUERY_STALE_TIME_MS = 0;
+
 function App() {
-  const [query, setQuery] = useState(DEFAULT_CITY_QUERY);
-  const [competitionQuery, setCompetitionQuery] = useState('');
+  const [initialAppState] = useState(readPersistedAppState);
+  const isRestoring = useIsRestoring();
+  const [query, setQuery] = useState(
+    initialAppState.query ?? DEFAULT_CITY_QUERY,
+  );
+  const [competitionQuery, setCompetitionQuery] = useState(
+    initialAppState.competitionQuery ?? '',
+  );
   const [competitionOptions, setCompetitionOptions] = useState<
     WcaCompetition[]
   >([]);
-  const [asOfDate, setAsOfDate] = useState(DEFAULT_DATE);
-  const [lookbackMonths, setLookbackMonths] = useState(
-    String(DEFAULT_LOOKBACK_MONTHS),
+  const [asOfDate, setAsOfDate] = useState(
+    initialAppState.asOfDate ?? DEFAULT_DATE,
   );
-  const [includeUpcoming, setIncludeUpcoming] = useState(false);
-  const [sameCountryOnly, setSameCountryOnly] = useState(true);
-  const [radiusMiles, setRadiusMiles] = useState(String(DEFAULT_RADIUS_MILES));
-  const [scopeMode, setScopeMode] = useState<SearchScopeMode>('radius');
-  const [selectedCity, setSelectedCity] = useState<CityLocation | null>(null);
+  const [lookbackMonths, setLookbackMonths] = useState(
+    initialAppState.lookbackMonths ?? String(DEFAULT_LOOKBACK_MONTHS),
+  );
+  const [includeUpcoming, setIncludeUpcoming] = useState(
+    initialAppState.includeUpcoming ?? false,
+  );
+  const [sameCountryOnly, setSameCountryOnly] = useState(
+    initialAppState.sameCountryOnly ?? true,
+  );
+  const [radiusMiles, setRadiusMiles] = useState(
+    initialAppState.radiusMiles ?? String(DEFAULT_RADIUS_MILES),
+  );
+  const [scopeMode, setScopeMode] = useState<SearchScopeMode>(
+    getStoredScopeMode(initialAppState.scopeMode),
+  );
+  const [selectedCity, setSelectedCity] = useState<CityLocation | null>(
+    initialAppState.selectedCity ?? null,
+  );
   const [cityOptions, setCityOptions] = useState<CityLocation[]>([]);
   const [summaryResults, setSummaryResults] =
     useState<EventSummaryResults | null>(null);
@@ -91,7 +157,9 @@ function App() {
     mode: 'radius',
     radiusMiles: DEFAULT_RADIUS_MILES,
   });
-  const [viewMode, setViewMode] = useState<ViewMode>('event');
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    getStoredViewMode(initialAppState.viewMode),
+  );
   const [isFindingCity, setIsFindingCity] = useState(false);
   const [isFindingCompetition, setIsFindingCompetition] = useState(false);
   const [isFindingLocation, setIsFindingLocation] = useState(false);
@@ -99,7 +167,9 @@ function App() {
   const [wcaUser, setWcaUser] = useState<WcaUser | null>(null);
   const [wcaCompetitions, setWcaCompetitions] = useState<WcaCompetition[]>([]);
   const [selectedWcaCompetition, setSelectedWcaCompetition] =
-    useState<WcaCompetition | null>(null);
+    useState<WcaCompetition | null>(
+      initialAppState.selectedWcaCompetition ?? null,
+    );
   const [isWcaLoading, setIsWcaLoading] = useState(false);
   const [wcaAuthError, setWcaAuthError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -108,6 +178,41 @@ function App() {
   const competitionLookupControllerRef = useRef<AbortController | null>(null);
   const locationLookupControllerRef = useRef<AbortController | null>(null);
   const wcaControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        APP_STATE_STORAGE_KEY,
+        JSON.stringify({
+          asOfDate,
+          competitionQuery,
+          includeUpcoming,
+          lookbackMonths,
+          query,
+          radiusMiles,
+          sameCountryOnly,
+          scopeMode,
+          selectedCity,
+          selectedWcaCompetition,
+          viewMode,
+        } satisfies PersistedAppState),
+      );
+    } catch {
+      // Persisting input state is best effort when storage is unavailable.
+    }
+  }, [
+    asOfDate,
+    competitionQuery,
+    includeUpcoming,
+    lookbackMonths,
+    query,
+    radiusMiles,
+    sameCountryOnly,
+    scopeMode,
+    selectedCity,
+    selectedWcaCompetition,
+    viewMode,
+  ]);
 
   const loadResults = useCallback(
     async (
@@ -158,14 +263,60 @@ function App() {
           return;
         }
 
+        const today = getDateString();
+        const historicalEndDate = endDate < today ? endDate : today;
+        const upcomingStartDate = startDate > today ? startDate : today;
+        const ranges = [
+          ...(startDate <= historicalEndDate
+            ? [
+                {
+                  cacheMode: 'cache-first' as const,
+                  endDate: historicalEndDate,
+                  staleTime: PAST_COMPETITION_STALE_TIME_MS,
+                  startDate,
+                },
+              ]
+            : []),
+          ...(shouldIncludeUpcoming && upcomingStartDate <= endDate
+            ? [
+                {
+                  cacheMode: 'network-only' as const,
+                  endDate,
+                  staleTime: LIVE_QUERY_STALE_TIME_MS,
+                  startDate: upcomingStartDate,
+                },
+              ]
+            : []),
+        ];
         const countryCompetitions = await Promise.all(
-          countryCodes.map((countryCode) =>
-            fetchCompetitions({
-              countryCode,
-              endDate,
-              signal: controller.signal,
-              startDate,
-            }),
+          countryCodes.flatMap((countryCode) =>
+            ranges.map(
+              ({
+                cacheMode,
+                endDate: rangeEndDate,
+                staleTime,
+                startDate: rangeStartDate,
+              }) => {
+                const queryKey = queryKeys.competitionHistory(
+                  countryCode,
+                  rangeStartDate,
+                  rangeEndDate,
+                );
+
+                return fetchQueryWithOfflineFallback<WcaCompetition[]>({
+                  queryKey,
+                  queryFn: () =>
+                    fetchCompetitions({
+                      cacheMode,
+                      countryCode,
+                      endDate: rangeEndDate,
+                      signal: controller.signal,
+                      startDate: rangeStartDate,
+                    }),
+                  staleTime,
+                });
+              },
+            ),
           ),
         );
         const competitions = Array.from(
@@ -206,24 +357,46 @@ function App() {
     const cityController = new AbortController();
     cityLookupControllerRef.current = cityController;
     const loadDefaultCity = async () => {
+      if (isRestoring) {
+        return;
+      }
+
       setIsFindingCity(true);
 
       try {
-        const [city] = await geocodeCities(
-          DEFAULT_CITY_QUERY,
-          cityController.signal,
-        );
-        if (isActive && city) {
+        const initialDate = initialAppState.asOfDate ?? DEFAULT_DATE;
+        const initialRadius = Number(initialAppState.radiusMiles);
+        const initialCity =
+          initialAppState.selectedCity ??
+          (
+            await fetchQueryWithOfflineFallback({
+              queryKey: queryKeys.citySearch(
+                initialAppState.query ?? DEFAULT_CITY_QUERY,
+              ),
+              queryFn: () =>
+                geocodeCities(
+                  initialAppState.query ?? DEFAULT_CITY_QUERY,
+                  cityController.signal,
+                ),
+              staleTime: 7 * 24 * 60 * 60 * 1000,
+            })
+          )[0];
+        if (isActive && initialCity) {
           await loadResults(
-            city,
-            DEFAULT_DATE,
-            {
-              mode: 'radius',
-              radiusMiles: DEFAULT_RADIUS_MILES,
-            },
-            false,
-            true,
-            DEFAULT_LOOKBACK_MONTHS,
+            initialCity,
+            initialDate,
+            getScopeForCity(
+              getStoredScopeMode(initialAppState.scopeMode),
+              initialCity,
+              Number.isFinite(initialRadius) && initialRadius > 0
+                ? initialRadius
+                : DEFAULT_RADIUS_MILES,
+            ),
+            initialAppState.includeUpcoming ?? false,
+            initialAppState.sameCountryOnly ?? true,
+            Number(initialAppState.lookbackMonths) > 0
+              ? Number(initialAppState.lookbackMonths)
+              : DEFAULT_LOOKBACK_MONTHS,
           );
         }
       } catch (caughtError) {
@@ -251,7 +424,7 @@ function App() {
       locationLookupControllerRef.current?.abort();
       controllerRef.current?.abort();
     };
-  }, [loadResults]);
+  }, [initialAppState, isRestoring, loadResults]);
 
   useEffect(() => {
     let isActive = true;
@@ -276,6 +449,7 @@ function App() {
       }
 
       if (!accessToken) {
+        queryClient.removeQueries({ queryKey: queryKeys.wcaMe() });
         return;
       }
 
@@ -283,10 +457,11 @@ function App() {
       setWcaAuthError(null);
 
       try {
-        const response = await fetchMyCompetitions(
-          accessToken,
-          controller.signal,
-        );
+        const response = await fetchQueryWithOfflineFallback({
+          queryKey: queryKeys.wcaMe(),
+          queryFn: () => fetchMyCompetitions(accessToken, controller.signal),
+          staleTime: LIVE_QUERY_STALE_TIME_MS,
+        });
         if (isActive) {
           setWcaUser(response.user);
           setWcaCompetitions(response.competitions);
@@ -301,6 +476,7 @@ function App() {
 
         if (isActive) {
           clearWcaAccessToken();
+          queryClient.removeQueries({ queryKey: queryKeys.wcaMe() });
           setWcaUser(null);
           setWcaCompetitions([]);
           setWcaAuthError(
@@ -376,7 +552,11 @@ function App() {
     setError(null);
 
     try {
-      const cities = await geocodeCities(trimmedQuery, cityController.signal);
+      const cities = await fetchQueryWithOfflineFallback({
+        queryKey: queryKeys.citySearch(trimmedQuery),
+        queryFn: () => geocodeCities(trimmedQuery, cityController.signal),
+        staleTime: 7 * 24 * 60 * 60 * 1000,
+      });
       if (cities.length === 0) {
         setError('No city matched that search. Try a city and country name.');
         return;
@@ -426,10 +606,16 @@ function App() {
     setIsFindingCompetition(true);
 
     try {
-      const competitions = await searchCompetitions(
-        trimmedQuery,
-        competitionController.signal,
-      );
+      const competitions = await fetchQueryWithOfflineFallback({
+        queryKey: queryKeys.competitionSearch(trimmedQuery),
+        queryFn: () =>
+          searchCompetitions(
+            trimmedQuery,
+            competitionController.signal,
+            'network-only',
+          ),
+        staleTime: LIVE_QUERY_STALE_TIME_MS,
+      });
 
       if (!competitionController.signal.aborted) {
         setCompetitionOptions(competitions);
@@ -504,11 +690,15 @@ function App() {
       });
 
       try {
-        const location = await reverseGeocodeLocation(
-          latitude,
-          longitude,
-          locationController.signal,
-        );
+        const location = await fetchQueryWithOfflineFallback({
+          queryKey: queryKeys.reverseGeocode(latitude, longitude),
+          queryFn: () =>
+            reverseGeocodeLocation(
+              latitude,
+              longitude,
+              locationController.signal,
+            ),
+        });
 
         if (!locationController.signal.aborted && location) {
           setQuery(location.displayName);
@@ -548,6 +738,7 @@ function App() {
 
   const handleWcaLogout = () => {
     wcaControllerRef.current?.abort();
+    queryClient.removeQueries({ queryKey: queryKeys.wcaMe() });
     clearWcaAccessToken();
     setWcaUser(null);
     setWcaCompetitions([]);

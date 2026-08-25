@@ -4,6 +4,10 @@ import { featureCollection } from '@turf/helpers';
 import intersect from '@turf/intersect';
 import * as L from 'leaflet';
 import type { Feature, MultiPolygon, Polygon } from 'geojson';
+import {
+  fetchQueryWithOfflineFallback,
+  queryKeys,
+} from '../../lib/queryClient';
 
 interface SearchAreaMapProps {
   clipToCountry?: boolean;
@@ -183,27 +187,19 @@ type CountryBoundaryPayload =
       features: CountryBoundary[];
     };
 
-let stateBoundariesRequest: Promise<StateBoundaryCollection | null> | null =
-  null;
-const countryBoundaryRequests = new Map<
-  string,
-  Promise<CountryBoundary | null>
->();
-
 const loadStateBoundaries = () => {
-  if (!stateBoundariesRequest) {
-    stateBoundariesRequest = fetch(STATE_BOUNDARIES_URL)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`State boundary request failed: ${response.status}`);
-        }
+  return fetchQueryWithOfflineFallback({
+    queryKey: queryKeys.stateBoundaries(),
+    queryFn: async ({ signal }) => {
+      const response = await fetch(STATE_BOUNDARIES_URL, { signal });
+      if (!response.ok) {
+        throw new Error(`State boundary request failed: ${response.status}`);
+      }
 
-        return response.json() as Promise<StateBoundaryCollection>;
-      })
-      .catch(() => null);
-  }
-
-  return stateBoundariesRequest;
+      return (await response.json()) as StateBoundaryCollection;
+    },
+    staleTime: 30 * 24 * 60 * 60 * 1000,
+  }).catch(() => null);
 };
 
 const loadCountryBoundary = (countryCode: string) => {
@@ -212,28 +208,24 @@ const loadCountryBoundary = (countryCode: string) => {
     return Promise.resolve(null);
   }
 
-  const existingRequest = countryBoundaryRequests.get(iso3Code);
-  if (existingRequest) {
-    return existingRequest;
-  }
-
-  const request = fetch(`${COUNTRY_BOUNDARIES_URL}/${iso3Code}.geo.json`)
-    .then((response) => {
+  return fetchQueryWithOfflineFallback({
+    queryKey: queryKeys.countryBoundary(iso3Code),
+    queryFn: async ({ signal }) => {
+      const response = await fetch(
+        `${COUNTRY_BOUNDARIES_URL}/${iso3Code}.geo.json`,
+        { signal },
+      );
       if (!response.ok) {
         throw new Error(`Country boundary request failed: ${response.status}`);
       }
 
-      return response.json() as Promise<CountryBoundaryPayload>;
-    })
-    .then((payload) =>
-      payload.type === 'FeatureCollection'
+      const payload = (await response.json()) as CountryBoundaryPayload;
+      return payload.type === 'FeatureCollection'
         ? (payload.features[0] ?? null)
-        : payload,
-    )
-    .catch(() => null);
-
-  countryBoundaryRequests.set(iso3Code, request);
-  return request;
+        : payload;
+    },
+    staleTime: 30 * 24 * 60 * 60 * 1000,
+  }).catch(() => null);
 };
 
 export function SearchAreaMap({
