@@ -16,6 +16,7 @@ interface SearchAreaMapProps {
 }
 
 const METERS_PER_MILE = 1609.344;
+const MILES_PER_LATITUDE_DEGREE = 69;
 const STATE_BOUNDARIES_URL =
   'https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json';
 const COUNTRY_BOUNDARIES_URL =
@@ -277,12 +278,20 @@ export function SearchAreaMap({
       fillOpacity: 0.16,
       weight: 2,
     };
-    const radiusBounds =
+    const latitudeDelta =
+      radiusMiles === undefined ? 0 : radiusMiles / MILES_PER_LATITUDE_DEGREE;
+    const longitudeScale = Math.max(Math.cos((latitude * Math.PI) / 180), 0.01);
+    const longitudeDelta =
+      radiusMiles === undefined
+        ? 0
+        : radiusMiles / (MILES_PER_LATITUDE_DEGREE * longitudeScale);
+    const radiusBounds: L.LatLngBoundsExpression | null =
       radiusMiles === undefined
         ? null
-        : L.circle(center, {
-            radius: radiusMiles * METERS_PER_MILE,
-          }).getBounds();
+        : [
+            [latitude - latitudeDelta, longitude - longitudeDelta],
+            [latitude + latitudeDelta, longitude + longitudeDelta],
+          ];
     let circle: L.Circle | null = null;
 
     const addUnclippedCircle = () => {
