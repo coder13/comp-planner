@@ -1040,12 +1040,10 @@ function App() {
           </div>
         )}
 
-        {(isLoading || isFindingLocation) && (
+        {isLoading && (
           <div className="mt-3 flex items-center gap-3 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 shadow-sm">
             <span className="size-4 animate-spin rounded-full border-2 border-gray-200 border-t-blue-600" />
-            {isFindingLocation
-              ? 'Looking up the selected map location...'
-              : 'Loading competitions...'}
+            Loading competitions...
           </div>
         )}
 
