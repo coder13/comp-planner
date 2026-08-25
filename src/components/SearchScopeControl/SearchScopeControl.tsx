@@ -111,17 +111,28 @@ export function SearchScopeControl({
           )}
         </div>
       ) : (
-        <div className="mt-3 rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-900">
-          {mode === 'state' ? (
-            <>
-              Search all competitions in <strong>{stateName}</strong>.
-            </>
-          ) : (
-            <>
-              Search all competitions across the <strong>{region?.name}</strong>{' '}
-              ({region?.states.join(', ')}).
-            </>
-          )}
+        <div className="mt-3 space-y-3">
+          <div className="rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-900">
+            {mode === 'state' ? (
+              <>
+                Search all competitions in <strong>{stateName}</strong>.
+              </>
+            ) : (
+              <>
+                Search all competitions across the{' '}
+                <strong>{region?.name}</strong> ({region?.states.join(', ')}).
+              </>
+            )}
+          </div>
+          {mode === 'state' &&
+            latitude !== undefined &&
+            longitude !== undefined && (
+              <SearchAreaMap
+                latitude={latitude}
+                longitude={longitude}
+                stateName={stateName}
+              />
+            )}
         </div>
       )}
     </section>

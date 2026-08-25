@@ -47,7 +47,7 @@ describe('CompetitionEventGroup', () => {
     expect(screen.queryByText('2 events')).not.toBeInTheDocument();
     expect(screen.queryByText(/Last held/)).not.toBeInTheDocument();
     expect(
-      screen.queryByText('Held in the last 12 months'),
-    ).not.toBeInTheDocument();
+      screen.getByLabelText('7 times held in the last year'),
+    ).toBeInTheDocument();
   });
 });

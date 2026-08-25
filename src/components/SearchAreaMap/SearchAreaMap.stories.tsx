@@ -30,3 +30,10 @@ export const WideRadius: Story = {
     radiusMiles: 100,
   },
 };
+
+export const WashingtonState: Story = {
+  args: {
+    radiusMiles: undefined,
+    stateName: 'Washington',
+  },
+};

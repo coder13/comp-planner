@@ -637,17 +637,14 @@ function App() {
             />
           </div>
 
-          <div className="mt-3 border-t border-gray-100 pt-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">Search</span>
-              <button
-                className="focus-ring inline-flex h-10 items-center justify-center rounded-md bg-blue-600 px-5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-                type="button"
-                disabled={isBusy || !selectedCity}
-                onClick={handleSearch}>
-                {isLoading ? 'Loading…' : 'Search'}
-              </button>
-            </div>
+          <div className="mt-3 flex justify-end border-t border-gray-100 pt-3">
+            <button
+              className="focus-ring inline-flex h-10 items-center justify-center rounded-md bg-blue-600 px-5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              type="button"
+              disabled={isBusy || !selectedCity}
+              onClick={handleSearch}>
+              {isLoading ? 'Loading…' : 'Search'}
+            </button>
           </div>
         </section>
 
@@ -743,7 +740,7 @@ function App() {
                   <span role="columnheader">Last held</span>
                 )}
                 <span role="columnheader" className="text-right">
-                  Held in the last 12 months
+                  Times held in last year
                 </span>
               </div>
 

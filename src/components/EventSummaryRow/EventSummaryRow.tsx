@@ -42,7 +42,13 @@ export function EventSummaryRow({
         showCompetition
           ? 'sm:grid-cols-[minmax(0,0.85fr)_minmax(180px,1.4fr)_minmax(130px,0.5fr)]'
           : 'sm:grid-cols-[minmax(0,0.85fr)_minmax(130px,0.5fr)]'
-      }`}>
+      }`}
+      style={{
+        backgroundColor: getHeldCountBackground(
+          event.heldInLast12Months,
+          maxHeldInLast12Months,
+        ),
+      }}>
       <div className="flex min-w-0 items-center gap-3">
         <span
           className={`cubing-icon event-${event.id} shrink-0 text-xl text-ink/55`}
@@ -87,13 +93,7 @@ export function EventSummaryRow({
 
       <div
         className="-my-4 flex min-w-0 items-center justify-end px-3 py-4 text-right"
-        aria-label={`${event.heldInLast12Months} times held in the last 12 months`}
-        style={{
-          backgroundColor: getHeldCountBackground(
-            event.heldInLast12Months,
-            maxHeldInLast12Months,
-          ),
-        }}>
+        aria-label={`${event.heldInLast12Months} times held in the last year`}>
         <span className="text-base font-semibold text-ink">
           {event.heldInLast12Months}
         </span>
