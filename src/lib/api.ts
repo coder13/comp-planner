@@ -84,6 +84,32 @@ const normalizeCityIdentity = (value: string) =>
     .toLocaleLowerCase()
     .replace(/\s+/g, ' ');
 
+export const parseCoordinates = (value: string) => {
+  const match = value
+    .trim()
+    .match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
+
+  if (!match) {
+    return null;
+  }
+
+  const latitude = Number(match[1]);
+  const longitude = Number(match[2]);
+
+  if (
+    !Number.isFinite(latitude) ||
+    !Number.isFinite(longitude) ||
+    latitude < -90 ||
+    latitude > 90 ||
+    longitude < -180 ||
+    longitude > 180
+  ) {
+    return null;
+  }
+
+  return { latitude, longitude };
+};
+
 export const geocodeCities = async (query: string, signal?: AbortSignal) => {
   const params = new URLSearchParams({
     limit: '5',

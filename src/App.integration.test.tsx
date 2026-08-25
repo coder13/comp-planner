@@ -62,6 +62,26 @@ describe('Seattle event search', () => {
 
       if (url.includes('photon.komoot.io')) {
         geocoderRequestCount += 1;
+
+        if (url.includes('/reverse?')) {
+          return responseFor({
+            features: [
+              {
+                geometry: {
+                  coordinates: [-122.58725, 47.47935],
+                },
+                properties: {
+                  country: 'United States',
+                  countrycode: 'us',
+                  name: 'Long Lake Road Southeast',
+                  state: 'Washington',
+                  type: 'street',
+                },
+              },
+            ],
+          }) as Promise<Response>;
+        }
+
         return responseFor({
           features: [
             {
@@ -225,6 +245,34 @@ describe('Seattle event search', () => {
     });
     expect(screen.getByText('Events in this competition')).toBeInTheDocument();
     expect(screen.getByText('Suggested events')).toBeInTheDocument();
+  });
+
+  it('identifies country and state when searching with coordinates', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('region', { name: 'Search results' }),
+      ).toBeInTheDocument();
+    });
+
+    const citySearch = screen.getByRole('textbox', { name: 'Pick a city' });
+    await user.clear(citySearch);
+    await user.type(citySearch, '47.47935, -122.58725');
+    await user.click(screen.getByRole('button', { name: 'Find city' }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: 'Entire state' }),
+      ).toBeEnabled();
+    });
+    expect(
+      screen.getByRole('checkbox', { name: 'Same country' }),
+    ).toBeChecked();
+    expect(
+      screen.queryByText(/No country could be identified/),
+    ).not.toBeInTheDocument();
   });
 
   it('searches neighboring countries only when same-country search is disabled', async () => {

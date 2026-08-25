@@ -1,6 +1,7 @@
 import {
   fetchMyCompetitions,
   geocodeCities,
+  parseCoordinates,
   reverseGeocodeLocation,
   searchCompetitions,
 } from './api';
@@ -39,6 +40,21 @@ describe('geocodeCities', () => {
     const cities = await geocodeCities('Seattle');
 
     expect(cities.map((city) => city.cityName)).toEqual(['Seattle', 'SeaTac']);
+  });
+});
+
+describe('parseCoordinates', () => {
+  it('accepts valid latitude and longitude pairs', () => {
+    expect(parseCoordinates(' 47.47935, -122.58725 ')).toEqual({
+      latitude: 47.47935,
+      longitude: -122.58725,
+    });
+  });
+
+  it('rejects malformed and out-of-range pairs', () => {
+    expect(parseCoordinates('Seattle, Washington')).toBeNull();
+    expect(parseCoordinates('91, -122')).toBeNull();
+    expect(parseCoordinates('47, -181')).toBeNull();
   });
 });
 

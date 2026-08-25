@@ -14,6 +14,7 @@ import {
   fetchCompetitions,
   fetchMyCompetitions,
   geocodeCities,
+  parseCoordinates,
   reverseGeocodeLocation,
   searchCompetitions,
 } from './lib/api';
@@ -552,6 +553,39 @@ function App() {
     setError(null);
 
     try {
+      const coordinates = parseCoordinates(trimmedQuery);
+      if (coordinates) {
+        const location = await fetchQueryWithOfflineFallback({
+          queryKey: queryKeys.reverseGeocode(
+            coordinates.latitude,
+            coordinates.longitude,
+          ),
+          queryFn: () =>
+            reverseGeocodeLocation(
+              coordinates.latitude,
+              coordinates.longitude,
+              cityController.signal,
+            ),
+          staleTime: 30 * 24 * 60 * 60 * 1000,
+        });
+
+        if (!location || !location.countryCode) {
+          setError(
+            'No country could be identified at those coordinates. Try another point.',
+          );
+          return;
+        }
+
+        if (!cityController.signal.aborted) {
+          handleCitySelect({
+            ...location,
+            latitude: coordinates.latitude,
+            longitude: coordinates.longitude,
+          });
+        }
+        return;
+      }
+
       const cities = await fetchQueryWithOfflineFallback({
         queryKey: queryKeys.citySearch(trimmedQuery),
         queryFn: () => geocodeCities(trimmedQuery, cityController.signal),
@@ -700,7 +734,14 @@ function App() {
             ),
         });
 
-        if (!locationController.signal.aborted && location) {
+        if (!locationController.signal.aborted) {
+          if (!location || !location.countryCode) {
+            setError(
+              'No country could be identified at that map point. Choose another point.',
+            );
+            return;
+          }
+
           setQuery(location.displayName);
           setSelectedCity({ ...location, latitude, longitude });
         }
@@ -809,6 +850,11 @@ function App() {
   const handleSearch = () => {
     if (!selectedCity) {
       setError('Choose a city before searching.');
+      return;
+    }
+
+    if (!selectedCity.countryCode) {
+      setError('Identify the selected location before searching.');
       return;
     }
 
