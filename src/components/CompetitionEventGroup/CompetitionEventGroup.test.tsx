@@ -20,7 +20,7 @@ describe('CompetitionEventGroup', () => {
               lastCompetitionName: 'Seattle Summer Open 2026',
               lastCompetitionUrl: 'https://example.com/competition',
               lastDistanceMiles: 8.4,
-              heldInLast12Months: 7,
+              heldInSearchWindow: 7,
               totalCompetitionCount: 9,
             },
             {
@@ -30,7 +30,7 @@ describe('CompetitionEventGroup', () => {
               lastCompetitionName: 'Seattle Summer Open 2026',
               lastCompetitionUrl: 'https://example.com/competition',
               lastDistanceMiles: 8.4,
-              heldInLast12Months: 3,
+              heldInSearchWindow: 3,
               totalCompetitionCount: 4,
             },
           ],
@@ -46,8 +46,6 @@ describe('CompetitionEventGroup', () => {
     expect(screen.getByText('3 weeks ago')).toBeInTheDocument();
     expect(screen.queryByText('2 events')).not.toBeInTheDocument();
     expect(screen.queryByText(/Last held/)).not.toBeInTheDocument();
-    expect(
-      screen.getByLabelText('7 times held in the last year'),
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText('7 times held')).toBeInTheDocument();
   });
 });

@@ -44,7 +44,7 @@ export interface EventSummary {
   lastCompetitionName: string;
   lastCompetitionUrl: string | null;
   lastDistanceMiles: number;
-  heldInLast12Months: number;
+  heldInSearchWindow: number;
   totalCompetitionCount: number;
 }
 
@@ -79,6 +79,6 @@ export interface CompetitionEventInsight {
   eventId: string;
   label: string;
   lastHeldDate: string | null;
-  heldInLast12Months: number;
+  heldInSearchWindow: number;
   totalCompetitionCount: number;
 }

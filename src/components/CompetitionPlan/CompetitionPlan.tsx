@@ -31,7 +31,7 @@ const EventInsightRow = ({
       <p className="font-medium text-gray-900">{insight.label}</p>
       <p className="mt-0.5 text-xs text-gray-500">
         {insight.lastHeldDate
-          ? `${formatRelativeAge(insight.lastHeldDate, asOfDate)} · held ${insight.heldInLast12Months} time${insight.heldInLast12Months === 1 ? '' : 's'} in the last year`
+          ? `${formatRelativeAge(insight.lastHeldDate, asOfDate)} · held ${insight.heldInSearchWindow} time${insight.heldInSearchWindow === 1 ? '' : 's'} in the search window`
           : 'No nearby history'}
       </p>
     </div>

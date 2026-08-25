@@ -6,8 +6,6 @@ const meta = {
   title: 'Components/SearchScopeControl',
   component: SearchScopeControl,
   args: {
-    clipToCountry: true,
-    countryCode: 'US',
     mode: 'radius',
     radiusMiles: '50',
     region: {

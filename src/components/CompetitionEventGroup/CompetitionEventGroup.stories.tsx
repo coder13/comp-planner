@@ -22,7 +22,7 @@ const meta = {
           lastCompetitionUrl:
             'https://www.worldcubeassociation.org/competitions/SeattleSummerOpen2026',
           lastDistanceMiles: 8.4,
-          heldInLast12Months: 7,
+          heldInSearchWindow: 7,
           totalCompetitionCount: 9,
         },
         {
@@ -33,7 +33,7 @@ const meta = {
           lastCompetitionUrl:
             'https://www.worldcubeassociation.org/competitions/SeattleSummerOpen2026',
           lastDistanceMiles: 8.4,
-          heldInLast12Months: 3,
+          heldInSearchWindow: 3,
           totalCompetitionCount: 4,
         },
       ],

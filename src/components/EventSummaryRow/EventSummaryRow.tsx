@@ -5,8 +5,8 @@ import { ArrowUpRightIcon, CalendarIcon } from '../Icons';
 interface EventSummaryRowProps {
   event: EventSummary;
   asOfDate: string;
-  maxHeldInLast12Months?: number;
-  medianHeldInLast12Months?: number;
+  maxHeldInSearchWindow?: number;
+  medianHeldInSearchWindow?: number;
   showCompetition?: boolean;
 }
 
@@ -24,27 +24,27 @@ const interpolateColor = (
   );
 
 const getHeldCountBackground = (
-  heldInLast12Months: number,
-  maxHeldInLast12Months: number,
-  medianHeldInLast12Months: number,
+  heldInSearchWindow: number,
+  maxHeldInSearchWindow: number,
+  medianHeldInSearchWindow: number,
 ) => {
-  if (medianHeldInLast12Months <= 0) {
+  if (medianHeldInSearchWindow <= 0) {
     return `rgba(${MIDPOINT_COLOR.join(', ')}, 0.5)`;
   }
 
   const color =
-    heldInLast12Months <= medianHeldInLast12Months
+    heldInSearchWindow <= medianHeldInSearchWindow
       ? interpolateColor(
           UNDER_HELD_COLOR,
           MIDPOINT_COLOR,
-          heldInLast12Months / medianHeldInLast12Months,
+          heldInSearchWindow / medianHeldInSearchWindow,
         )
       : interpolateColor(
           MIDPOINT_COLOR,
           OVER_SATURATED_COLOR,
-          maxHeldInLast12Months > medianHeldInLast12Months
-            ? (heldInLast12Months - medianHeldInLast12Months) /
-                (maxHeldInLast12Months - medianHeldInLast12Months)
+          maxHeldInSearchWindow > medianHeldInSearchWindow
+            ? (heldInSearchWindow - medianHeldInSearchWindow) /
+                (maxHeldInSearchWindow - medianHeldInSearchWindow)
             : 1,
         );
 
@@ -54,8 +54,8 @@ const getHeldCountBackground = (
 export function EventSummaryRow({
   asOfDate,
   event,
-  maxHeldInLast12Months = event.heldInLast12Months,
-  medianHeldInLast12Months = maxHeldInLast12Months / 2,
+  maxHeldInSearchWindow = event.heldInSearchWindow,
+  medianHeldInSearchWindow = maxHeldInSearchWindow / 2,
   showCompetition = true,
 }: EventSummaryRowProps) {
   return (
@@ -67,9 +67,9 @@ export function EventSummaryRow({
       }`}
       style={{
         backgroundColor: getHeldCountBackground(
-          event.heldInLast12Months,
-          maxHeldInLast12Months,
-          medianHeldInLast12Months,
+          event.heldInSearchWindow,
+          maxHeldInSearchWindow,
+          medianHeldInSearchWindow,
         ),
       }}>
       <div className="flex min-w-0 items-center gap-3">
@@ -125,9 +125,9 @@ export function EventSummaryRow({
 
       <div
         className="-my-4 flex min-w-0 items-center justify-end px-3 py-4 text-right"
-        aria-label={`${event.heldInLast12Months} times held in the last year`}>
+        aria-label={`${event.heldInSearchWindow} times held`}>
         <span className="text-base font-semibold text-ink">
-          {event.heldInLast12Months}
+          {event.heldInSearchWindow}
         </span>
       </div>
     </article>

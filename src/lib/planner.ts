@@ -8,7 +8,6 @@ import {
 } from './types';
 
 export const DEFAULT_LOOKBACK_MONTHS = 12;
-export const RECENT_MONTHS = 12;
 export const UPCOMING_MONTHS = 12;
 export const KILOMETERS_PER_MILE = 1.609344;
 
@@ -138,7 +137,6 @@ export const EVENT_LABELS: Record<string, string> = {
   '333fm': '3×3 Fewest Moves',
   '333mbf': '3×3 Multi-Blind',
   '333oh': '3×3 One-Handed',
-  '333ft': '3×3 With Feet',
   '444': '4×4×4 Cube',
   '444bf': '4×4 Blindfolded',
   '555': '5×5×5 Cube',
@@ -152,6 +150,9 @@ export const EVENT_LABELS: Record<string, string> = {
   sq1: 'Square-1',
 };
 
+export const isTrackedEvent = (eventId: string) =>
+  Object.prototype.hasOwnProperty.call(EVENT_LABELS, eventId);
+
 export const getEventLabel = (eventId: string) =>
   EVENT_LABELS[eventId] ?? eventId;
 
@@ -162,20 +163,21 @@ export const getCompetitionEventInsights = (
   const summariesById = new Map(
     eventSummaries.map((summary) => [summary.id, summary]),
   );
-  const selectedEventIds = new Set(eventIds);
+  const trackedEventIds = eventIds.filter(isTrackedEvent);
+  const selectedEventIds = new Set(trackedEventIds);
   const toInsight = (eventId: string): CompetitionEventInsight => {
     const summary = summariesById.get(eventId);
     return {
       eventId,
       label: getEventLabel(eventId),
       lastHeldDate: summary?.lastHeldDate ?? null,
-      heldInLast12Months: summary?.heldInLast12Months ?? 0,
+      heldInSearchWindow: summary?.heldInSearchWindow ?? 0,
       totalCompetitionCount: summary?.totalCompetitionCount ?? 0,
     };
   };
 
   return {
-    selected: eventIds.map(toInsight),
+    selected: trackedEventIds.map(toInsight),
     suggested: eventSummaries
       .filter((summary) => !selectedEventIds.has(summary.id))
       .map((summary) => toInsight(summary.id)),
@@ -301,9 +303,10 @@ export const getEventSummaries = (
   location: { latitude: number; longitude: number },
   asOfDate: string,
   scope: SearchScope,
+  searchLookbackMonths = DEFAULT_LOOKBACK_MONTHS,
 ): EventSummaryResults => {
   const asOf = toDate(asOfDate);
-  const recentStart = dateMonthsAgo(asOf, RECENT_MONTHS);
+  const recentStart = dateMonthsAgo(asOf, searchLookbackMonths);
   const localCompetitions = competitions
     .filter((competition) => {
       if (
@@ -350,7 +353,7 @@ export const getEventSummaries = (
     events.set(eventId, {
       id: eventId,
       label,
-      heldInLast12Months: 0,
+      heldInSearchWindow: 0,
       totalCompetitionCount: 0,
       lastCompetitionId: '',
       lastCompetitionName: '',
@@ -362,6 +365,10 @@ export const getEventSummaries = (
 
   heldCompetitions.forEach(({ competition, distanceMiles }) => {
     competition.event_ids.forEach((eventId) => {
+      if (!isTrackedEvent(eventId)) {
+        return;
+      }
+
       const current = events.get(eventId);
       const isRecent = toDate(competition.end_date) >= recentStart;
       const isNewer =
@@ -370,8 +377,8 @@ export const getEventSummaries = (
       events.set(eventId, {
         id: eventId,
         label: getEventLabel(eventId),
-        heldInLast12Months:
-          (current?.heldInLast12Months ?? 0) + (isRecent ? 1 : 0),
+        heldInSearchWindow:
+          (current?.heldInSearchWindow ?? 0) + (isRecent ? 1 : 0),
         totalCompetitionCount: (current?.totalCompetitionCount ?? 0) + 1,
         lastCompetitionId: isNewer
           ? competition.id
@@ -403,7 +410,7 @@ export const getEventSummaries = (
       lastCompetitionName: event.lastCompetitionName,
       lastCompetitionUrl: event.lastCompetitionUrl,
       lastDistanceMiles: event.lastDistanceMiles,
-      heldInLast12Months: event.heldInLast12Months,
+      heldInSearchWindow: event.heldInSearchWindow,
       totalCompetitionCount: event.totalCompetitionCount,
     };
 
@@ -453,7 +460,7 @@ export const getEventSummaries = (
       endDate: competition.end_date,
       city: competition.city,
       url: competition.url,
-      eventIds: competition.event_ids,
+      eventIds: competition.event_ids.filter(isTrackedEvent),
       distanceMiles,
     }));
 
@@ -469,7 +476,7 @@ export const getEventSummaries = (
           lastCompetitionName,
           lastCompetitionUrl,
           lastDistanceMiles,
-          heldInLast12Months,
+          heldInSearchWindow,
           totalCompetitionCount,
         }) => ({
           id,
@@ -478,7 +485,7 @@ export const getEventSummaries = (
           lastCompetitionName,
           lastCompetitionUrl,
           lastDistanceMiles,
-          heldInLast12Months,
+          heldInSearchWindow,
           totalCompetitionCount,
         }),
       )

@@ -10,19 +10,19 @@ import { ArrowUpRightIcon, CalendarIcon } from '../Icons';
 interface CompetitionEventGroupProps {
   asOfDate: string;
   group: EventGroup;
-  maxHeldInLast12Months?: number;
-  medianHeldInLast12Months?: number;
+  maxHeldInSearchWindow?: number;
+  medianHeldInSearchWindow?: number;
 }
 
 export function CompetitionEventGroup({
   asOfDate,
   group,
-  maxHeldInLast12Months = Math.max(
+  maxHeldInSearchWindow = Math.max(
     0,
-    ...group.events.map((event) => event.heldInLast12Months),
+    ...group.events.map((event) => event.heldInSearchWindow),
   ),
-  medianHeldInLast12Months = getMedianValue(
-    group.events.map((event) => event.heldInLast12Months),
+  medianHeldInSearchWindow = getMedianValue(
+    group.events.map((event) => event.heldInSearchWindow),
   ),
 }: CompetitionEventGroupProps) {
   return (
@@ -66,8 +66,8 @@ export function CompetitionEventGroup({
             asOfDate={asOfDate}
             event={event}
             key={event.id}
-            maxHeldInLast12Months={maxHeldInLast12Months}
-            medianHeldInLast12Months={medianHeldInLast12Months}
+            maxHeldInSearchWindow={maxHeldInSearchWindow}
+            medianHeldInSearchWindow={medianHeldInSearchWindow}
             showCompetition={false}
           />
         ))}

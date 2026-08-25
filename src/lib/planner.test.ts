@@ -32,7 +32,7 @@ describe('getEventSummaries', () => {
   it('sorts events by last held date and counts the previous 12 months', () => {
     const results = getEventSummaries(
       [
-        competition({ event_ids: ['333'] }),
+        competition({ event_ids: ['333', '333ft'] }),
         competition({
           id: 'JulyOpen2026',
           name: 'July Open 2026',
@@ -77,18 +77,19 @@ describe('getEventSummaries', () => {
     expect(results.competitionCount).toBe(4);
     expect(results.events.map((event) => event.id)).toContain('222');
     expect(results.events.map((event) => event.id)).toContain('333');
-    expect(results.events.map((event) => event.id)).toContain('333ft');
-    expect(results.events.find((event) => event.id === '333ft')).toEqual(
+    expect(results.events.map((event) => event.id)).not.toContain('333ft');
+    expect(results.events.map((event) => event.id)).toContain('444bf');
+    expect(results.events.find((event) => event.id === '444bf')).toEqual(
       expect.objectContaining({
-        heldInLast12Months: 0,
+        heldInSearchWindow: 0,
         lastHeldDate: null,
         totalCompetitionCount: 0,
       }),
     );
     const twoByTwo = results.events.find((event) => event.id === '222');
     const threeByThree = results.events.find((event) => event.id === '333');
-    expect(twoByTwo?.heldInLast12Months).toBe(1);
-    expect(threeByThree?.heldInLast12Months).toBe(2);
+    expect(twoByTwo?.heldInSearchWindow).toBe(1);
+    expect(threeByThree?.heldInSearchWindow).toBe(2);
     expect(twoByTwo?.lastCompetitionName).toBe('July Open 2026');
     expect(threeByThree?.lastCompetitionName).toBe('Local Open 2026');
     expect(
@@ -105,7 +106,7 @@ describe('getEventSummaries', () => {
       results.eventGroups.find(
         (group) => group.competitionName === 'No nearby competition',
       )?.events,
-    ).toHaveLength(16);
+    ).toHaveLength(15);
     expect(results.upcomingCompetitions.map((upcoming) => upcoming.id)).toEqual(
       ['SeattleFallOpen2026'],
     );
@@ -116,6 +117,35 @@ describe('getEventSummaries', () => {
       endDate: '2027-08-24',
       startDate: '2025-08-24',
     });
+  });
+
+  it('counts held events across the selected search window', () => {
+    const results = getEventSummaries(
+      [
+        competition({
+          id: 'RecentOpen2026',
+          name: 'Recent Open 2026',
+          start_date: '2026-07-01',
+          end_date: '2026-07-01',
+          event_ids: ['333'],
+        }),
+        competition({
+          id: 'OlderOpen2025',
+          name: 'Older Open 2025',
+          start_date: '2025-01-01',
+          end_date: '2025-01-01',
+          event_ids: ['333'],
+        }),
+      ],
+      { latitude: 47.6, longitude: -122.3 },
+      '2026-08-24',
+      { mode: 'radius', radiusMiles: 50 },
+      24,
+    );
+
+    expect(
+      results.events.find((event) => event.id === '333')?.heldInSearchWindow,
+    ).toBe(2);
   });
 
   it('uses the selected history window for the WCA request', () => {

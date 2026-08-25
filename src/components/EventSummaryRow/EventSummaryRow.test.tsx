@@ -13,11 +13,11 @@ describe('EventSummaryRow', () => {
           lastCompetitionName: 'Seattle Summer Open 2026',
           lastCompetitionUrl: 'https://example.com/competition',
           lastDistanceMiles: 8.4,
-          heldInLast12Months: 7,
+          heldInSearchWindow: 7,
           totalCompetitionCount: 9,
         }}
-        maxHeldInLast12Months={10}
-        medianHeldInLast12Months={7}
+        maxHeldInSearchWindow={10}
+        medianHeldInSearchWindow={7}
       />,
     );
 
@@ -32,9 +32,7 @@ describe('EventSummaryRow', () => {
     expect(screen.queryByText(/search history/)).not.toBeInTheDocument();
     expect(screen.getByText('3 weeks ago')).toBeInTheDocument();
     expect(screen.getByText('Aug 1, 2026')).toBeInTheDocument();
-    expect(
-      screen.getByLabelText('7 times held in the last year'),
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText('7 times held')).toBeInTheDocument();
     expect(screen.queryByText('8.4 mi away')).not.toBeInTheDocument();
   });
 
@@ -43,19 +41,19 @@ describe('EventSummaryRow', () => {
       <EventSummaryRow
         asOfDate="2026-08-24"
         event={{
-          id: '333ft',
-          label: '3×3 With Feet',
+          id: '444bf',
+          label: '4×4 Blindfolded',
           lastHeldDate: null,
           lastCompetitionName: '',
           lastCompetitionUrl: null,
           lastDistanceMiles: 0,
-          heldInLast12Months: 0,
+          heldInSearchWindow: 0,
           totalCompetitionCount: 0,
         }}
       />,
     );
 
-    expect(screen.getByText('3×3 With Feet')).toBeInTheDocument();
+    expect(screen.getByText('4×4 Blindfolded')).toBeInTheDocument();
     expect(screen.getByText('No nearby competition')).toBeInTheDocument();
     expect(screen.getByText('No match in search history')).toBeInTheDocument();
     expect(screen.getByText('Never held')).toBeInTheDocument();

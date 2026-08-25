@@ -29,7 +29,7 @@ describe('CompetitionPlan', () => {
             lastCompetitionName: 'Seattle Summer Open 2026',
             lastCompetitionUrl: 'https://example.com/competition',
             lastDistanceMiles: 3,
-            heldInLast12Months: 4,
+            heldInSearchWindow: 4,
             totalCompetitionCount: 6,
           },
           {
@@ -39,7 +39,7 @@ describe('CompetitionPlan', () => {
             lastCompetitionName: 'Seattle Fall Open 2025',
             lastCompetitionUrl: 'https://example.com/older-competition',
             lastDistanceMiles: 8,
-            heldInLast12Months: 0,
+            heldInSearchWindow: 0,
             totalCompetitionCount: 2,
           },
         ]}
@@ -51,7 +51,7 @@ describe('CompetitionPlan', () => {
     expect(screen.getByText('Suggested events')).toBeInTheDocument();
     expect(screen.getByText('Pyraminx')).toBeInTheDocument();
     expect(
-      screen.getByText(/held 0 times in the last year/),
+      screen.getByText(/held 0 times in the search window/),
     ).toBeInTheDocument();
   });
 });

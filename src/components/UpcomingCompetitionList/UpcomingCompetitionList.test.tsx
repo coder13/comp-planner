@@ -13,7 +13,7 @@ describe('UpcomingCompetitionList', () => {
             endDate: '2026-09-13',
             city: 'Seattle, Washington',
             url: 'https://example.com/competition',
-            eventIds: ['333', 'pyram'],
+            eventIds: ['333', 'pyram', '333ft'],
             distanceMiles: 8.4,
           },
         ]}
@@ -29,5 +29,6 @@ describe('UpcomingCompetitionList', () => {
     expect(screen.getByText('Sep 12, 2026 – Sep 13, 2026')).toBeInTheDocument();
     expect(screen.getByText('8.4 mi away · 2 events')).toBeInTheDocument();
     expect(screen.getByText('3×3×3 Cube, Pyraminx')).toBeInTheDocument();
+    expect(screen.queryByText(/Feet/)).not.toBeInTheDocument();
   });
 });

@@ -108,57 +108,19 @@ describe('SearchAreaMap', () => {
     expect(onLocationSelect).toHaveBeenCalledWith(48.1, -123.1);
   });
 
-  it('clips the radius to the selected country boundary', async () => {
-    globalThis.fetch = jest.fn().mockResolvedValue({
-      json: async () => ({
-        type: 'FeatureCollection',
-        features: [
-          {
-            type: 'Feature',
-            geometry: {
-              type: 'Polygon',
-              coordinates: [
-                [
-                  [-123, 47],
-                  [-121, 47],
-                  [-121, 48],
-                  [-123, 48],
-                  [-123, 47],
-                ],
-              ],
-            },
-            properties: {},
-          },
-        ],
-      }),
-      ok: true,
-    }) as typeof fetch;
-
+  it('keeps the radius circular over water', () => {
     render(
-      <SearchAreaMap
-        clipToCountry={true}
-        countryCode="US"
-        latitude={47.6}
-        longitude={-122.3}
-        radiusMiles={50}
-      />,
+      <SearchAreaMap latitude={47.6} longitude={-122.3} radiusMiles={50} />,
     );
 
-    await waitFor(() => {
-      expect(Leaflet.geoJSON).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'Feature' }),
-        expect.objectContaining({ style: expect.any(Object) }),
-      );
-    });
     expect(Leaflet.circle).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
         pane: 'search-radius-outline',
-        radius: expect.any(Number),
+        color: '#2563eb',
+        fillOpacity: 0.16,
       }),
     );
-    expect(
-      (Leaflet.circle as jest.Mock).mock.results[0]?.value.bringToFront,
-    ).toHaveBeenCalled();
+    expect(Leaflet.geoJSON).not.toHaveBeenCalled();
   });
 });

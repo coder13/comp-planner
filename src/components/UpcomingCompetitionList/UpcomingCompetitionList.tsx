@@ -2,6 +2,7 @@ import {
   formatCompetitionDate,
   formatDistanceMiles,
   getEventLabel,
+  isTrackedEvent,
 } from '../../lib/planner';
 import { UpcomingCompetitionSummary } from '../../lib/types';
 import { ArrowUpRightIcon } from '../Icons';
@@ -65,15 +66,20 @@ export function UpcomingCompetitionList({
                 </p>
                 <p className="mt-1">
                   {formatDistanceMiles(competition.distanceMiles)} away ·{' '}
-                  {formatEventCount(competition.eventIds.length)}
+                  {formatEventCount(
+                    competition.eventIds.filter(isTrackedEvent).length,
+                  )}
                 </p>
               </div>
             </div>
 
             <p className="mt-2 text-xs text-gray-500">
               <span className="font-medium text-gray-700">Events:</span>{' '}
-              {competition.eventIds.length > 0
-                ? competition.eventIds.map(getEventLabel).join(', ')
+              {competition.eventIds.filter(isTrackedEvent).length > 0
+                ? competition.eventIds
+                    .filter(isTrackedEvent)
+                    .map(getEventLabel)
+                    .join(', ')
                 : 'Not listed yet'}
             </p>
           </article>

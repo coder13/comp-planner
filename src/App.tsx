@@ -327,7 +327,13 @@ function App() {
               .map((competition) => [competition.id, competition]),
           ).values(),
         );
-        const results = getEventSummaries(competitions, city, date, scope);
+        const results = getEventSummaries(
+          competitions,
+          city,
+          date,
+          scope,
+          searchLookbackMonths,
+        );
 
         if (!controller.signal.aborted) {
           setSummaryResults(results);
@@ -881,15 +887,15 @@ function App() {
 
   const isBusy = isFindingCity || isFindingLocation || isLoading;
   const selectedRegion = getRegionForState(selectedCity?.stateName);
-  const maxHeldInLast12Months = summaryResults
+  const maxHeldInSearchWindow = summaryResults
     ? Math.max(
-        ...summaryResults.events.map((event) => event.heldInLast12Months),
+        ...summaryResults.events.map((event) => event.heldInSearchWindow),
         0,
       )
     : 0;
-  const medianHeldInLast12Months = summaryResults
+  const medianHeldInSearchWindow = summaryResults
     ? getMedianValue(
-        summaryResults.events.map((event) => event.heldInLast12Months),
+        summaryResults.events.map((event) => event.heldInSearchWindow),
       )
     : 0;
 
@@ -997,8 +1003,6 @@ function App() {
             </div>
 
             <SearchScopeControl
-              clipToCountry={sameCountryOnly}
-              countryCode={selectedCity?.countryCode}
               latitude={selectedCity?.latitude}
               mode={scopeMode}
               longitude={selectedCity?.longitude}
@@ -1121,7 +1125,7 @@ function App() {
                   <span role="columnheader">Last held</span>
                 )}
                 <span role="columnheader" className="text-right">
-                  Times held in last year
+                  Times held
                 </span>
               </div>
 
@@ -1132,8 +1136,8 @@ function App() {
                       asOfDate={searchedDate}
                       event={event}
                       key={event.id}
-                      maxHeldInLast12Months={maxHeldInLast12Months}
-                      medianHeldInLast12Months={medianHeldInLast12Months}
+                      maxHeldInSearchWindow={maxHeldInSearchWindow}
+                      medianHeldInSearchWindow={medianHeldInSearchWindow}
                     />
                   ))
                 ) : (
@@ -1142,8 +1146,8 @@ function App() {
                       asOfDate={searchedDate}
                       group={group}
                       key={group.competitionId}
-                      maxHeldInLast12Months={maxHeldInLast12Months}
-                      medianHeldInLast12Months={medianHeldInLast12Months}
+                      maxHeldInSearchWindow={maxHeldInSearchWindow}
+                      medianHeldInSearchWindow={medianHeldInSearchWindow}
                     />
                   ))
                 )

@@ -29,7 +29,7 @@ const meta = {
         lastCompetitionName: 'Seattle Summer Open 2026',
         lastCompetitionUrl: 'https://example.com/competition',
         lastDistanceMiles: 3,
-        heldInLast12Months: 4,
+        heldInSearchWindow: 4,
         totalCompetitionCount: 6,
       },
       {
@@ -39,7 +39,7 @@ const meta = {
         lastCompetitionName: 'Seattle Summer Open 2026',
         lastCompetitionUrl: 'https://example.com/competition',
         lastDistanceMiles: 3,
-        heldInLast12Months: 3,
+        heldInSearchWindow: 3,
         totalCompetitionCount: 5,
       },
       {
@@ -49,7 +49,7 @@ const meta = {
         lastCompetitionName: 'Seattle Fall Open 2025',
         lastCompetitionUrl: 'https://example.com/older-competition',
         lastDistanceMiles: 8,
-        heldInLast12Months: 0,
+        heldInSearchWindow: 0,
         totalCompetitionCount: 2,
       },
     ],

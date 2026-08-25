@@ -216,7 +216,7 @@ describe('Seattle event search', () => {
     ).toBeInTheDocument();
     expect(
       screen.getAllByRole('columnheader', {
-        name: 'Times held in last year',
+        name: 'Times held',
       }),
     ).toHaveLength(1);
     expect(wcaRequestCount).toBe(requestsAfterInitialLoad);

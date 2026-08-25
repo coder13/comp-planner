@@ -16,8 +16,6 @@ describe('SearchScopeControl', () => {
 
     render(
       <SearchScopeControl
-        clipToCountry={true}
-        countryCode="US"
         mode="radius"
         radiusMiles="50"
         region={null}
@@ -40,8 +38,6 @@ describe('SearchScopeControl', () => {
     const searchAreaMap = SearchAreaMap as jest.Mock;
     const onRadiusChange = jest.fn();
     const props = {
-      clipToCountry: true,
-      countryCode: 'US',
       latitude: 47.6,
       longitude: -122.3,
       mode: 'radius' as const,
@@ -77,8 +73,6 @@ describe('SearchScopeControl', () => {
   it('shows state and region scope choices for a PNW city', () => {
     render(
       <SearchScopeControl
-        clipToCountry={true}
-        countryCode="US"
         mode="radius"
         radiusMiles="50"
         region={{
@@ -106,8 +100,6 @@ describe('SearchScopeControl', () => {
 
     render(
       <SearchScopeControl
-        clipToCountry={true}
-        countryCode="US"
         mode="radius"
         radiusMiles="50"
         region={null}

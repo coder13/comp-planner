@@ -14,7 +14,7 @@ const meta = {
       lastCompetitionUrl:
         'https://www.worldcubeassociation.org/competitions/SeattleSummerOpen2026',
       lastDistanceMiles: 8.4,
-      heldInLast12Months: 7,
+      heldInSearchWindow: 7,
       totalCompetitionCount: 9,
     },
   },
@@ -44,7 +44,7 @@ export const NoRecentCompetition: Story = {
       lastCompetitionUrl:
         'https://www.worldcubeassociation.org/competitions/NorthwestCubeClassic2024',
       lastDistanceMiles: 8.4,
-      heldInLast12Months: 0,
+      heldInSearchWindow: 0,
       totalCompetitionCount: 1,
     },
   },

@@ -1,17 +1,11 @@
 import { useEffect, useRef } from 'react';
-import circle from '@turf/circle';
-import { featureCollection } from '@turf/helpers';
-import intersect from '@turf/intersect';
 import * as L from 'leaflet';
-import type { Feature, MultiPolygon, Polygon } from 'geojson';
 import {
   fetchQueryWithOfflineFallback,
   queryKeys,
 } from '../../lib/queryClient';
 
 interface SearchAreaMapProps {
-  clipToCountry?: boolean;
-  countryCode?: string;
   latitude: number;
   longitude: number;
   onLocationSelect?: (latitude: number, longitude: number) => void;
@@ -21,155 +15,9 @@ interface SearchAreaMapProps {
 
 const METERS_PER_MILE = 1609.344;
 const MILES_PER_LATITUDE_DEGREE = 69;
-const RADIUS_FILL_PANE = 'search-radius-fill';
 const RADIUS_OUTLINE_PANE = 'search-radius-outline';
 const STATE_BOUNDARIES_URL =
   'https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json';
-const COUNTRY_BOUNDARIES_URL =
-  'https://raw.githubusercontent.com/johan/world.geo.json/master/countries';
-
-const COUNTRY_ISO3_CODES: Record<string, string> = {
-  AD: 'AND',
-  AE: 'ARE',
-  AF: 'AFG',
-  AL: 'ALB',
-  AM: 'ARM',
-  AR: 'ARG',
-  AT: 'AUT',
-  AU: 'AUS',
-  AZ: 'AZE',
-  BA: 'BIH',
-  BD: 'BGD',
-  BE: 'BEL',
-  BG: 'BGR',
-  BH: 'BHR',
-  BO: 'BOL',
-  BR: 'BRA',
-  BY: 'BLR',
-  CA: 'CAN',
-  CD: 'COD',
-  CF: 'CAF',
-  CG: 'COG',
-  CH: 'CHE',
-  CI: 'CIV',
-  CL: 'CHL',
-  CM: 'CMR',
-  CN: 'CHN',
-  CO: 'COL',
-  CR: 'CRI',
-  CU: 'CUB',
-  CV: 'CPV',
-  CY: 'CYP',
-  CZ: 'CZE',
-  DE: 'DEU',
-  DJ: 'DJI',
-  DK: 'DNK',
-  DO: 'DOM',
-  DZ: 'DZA',
-  EC: 'ECU',
-  EE: 'EST',
-  EG: 'EGY',
-  ES: 'ESP',
-  ET: 'ETH',
-  FI: 'FIN',
-  FJ: 'FJI',
-  FR: 'FRA',
-  GB: 'GBR',
-  GE: 'GEO',
-  GH: 'GHA',
-  GR: 'GRC',
-  GT: 'GTM',
-  HK: 'HKG',
-  HN: 'HND',
-  HR: 'HRV',
-  HU: 'HUN',
-  ID: 'IDN',
-  IE: 'IRL',
-  IL: 'ISR',
-  IN: 'IND',
-  IQ: 'IRQ',
-  IR: 'IRN',
-  IS: 'ISL',
-  IT: 'ITA',
-  JM: 'JAM',
-  JO: 'JOR',
-  JP: 'JPN',
-  KE: 'KEN',
-  KG: 'KGZ',
-  KH: 'KHM',
-  KP: 'PRK',
-  KR: 'KOR',
-  KW: 'KWT',
-  KZ: 'KAZ',
-  LA: 'LAO',
-  LB: 'LBN',
-  LI: 'LIE',
-  LK: 'LKA',
-  LT: 'LTU',
-  LU: 'LUX',
-  LV: 'LVA',
-  MA: 'MAR',
-  MC: 'MCO',
-  MD: 'MDA',
-  ME: 'MNE',
-  MG: 'MDG',
-  MK: 'MKD',
-  MN: 'MNG',
-  MO: 'MAC',
-  MT: 'MLT',
-  MU: 'MUS',
-  MV: 'MDV',
-  MW: 'MWI',
-  MX: 'MEX',
-  MY: 'MYS',
-  MZ: 'MOZ',
-  NA: 'NAM',
-  NG: 'NGA',
-  NI: 'NIC',
-  NL: 'NLD',
-  NO: 'NOR',
-  NP: 'NPL',
-  NZ: 'NZL',
-  OM: 'OMN',
-  PA: 'PAN',
-  PE: 'PER',
-  PH: 'PHL',
-  PK: 'PAK',
-  PL: 'POL',
-  PR: 'PRI',
-  PT: 'PRT',
-  PY: 'PRY',
-  QA: 'QAT',
-  RO: 'ROU',
-  RS: 'SRB',
-  RU: 'RUS',
-  SA: 'SAU',
-  SE: 'SWE',
-  SG: 'SGP',
-  SI: 'SVN',
-  SK: 'SVK',
-  SM: 'SMR',
-  SN: 'SEN',
-  SV: 'SLV',
-  TH: 'THA',
-  TJ: 'TJK',
-  TM: 'TKM',
-  TN: 'TUN',
-  TR: 'TUR',
-  TW: 'TWN',
-  TZ: 'TZA',
-  UA: 'UKR',
-  UG: 'UGA',
-  US: 'USA',
-  UY: 'URY',
-  UZ: 'UZB',
-  VA: 'VAT',
-  VE: 'VEN',
-  VN: 'VNM',
-  ZA: 'ZAF',
-  ZM: 'ZMB',
-  ZW: 'ZWE',
-};
 
 interface StateBoundaryFeature {
   properties?: {
@@ -180,14 +28,6 @@ interface StateBoundaryFeature {
 interface StateBoundaryCollection {
   features: StateBoundaryFeature[];
 }
-
-type CountryBoundary = Feature<Polygon | MultiPolygon>;
-type CountryBoundaryPayload =
-  | CountryBoundary
-  | {
-      type: 'FeatureCollection';
-      features: CountryBoundary[];
-    };
 
 const loadStateBoundaries = () => {
   return fetchQueryWithOfflineFallback({
@@ -204,35 +44,7 @@ const loadStateBoundaries = () => {
   }).catch(() => null);
 };
 
-const loadCountryBoundary = (countryCode: string) => {
-  const iso3Code = COUNTRY_ISO3_CODES[countryCode.toUpperCase()];
-  if (!iso3Code) {
-    return Promise.resolve(null);
-  }
-
-  return fetchQueryWithOfflineFallback({
-    queryKey: queryKeys.countryBoundary(iso3Code),
-    queryFn: async ({ signal }) => {
-      const response = await fetch(
-        `${COUNTRY_BOUNDARIES_URL}/${iso3Code}.geo.json`,
-        { signal },
-      );
-      if (!response.ok) {
-        throw new Error(`Country boundary request failed: ${response.status}`);
-      }
-
-      const payload = (await response.json()) as CountryBoundaryPayload;
-      return payload.type === 'FeatureCollection'
-        ? (payload.features[0] ?? null)
-        : payload;
-    },
-    staleTime: 30 * 24 * 60 * 60 * 1000,
-  }).catch(() => null);
-};
-
 export function SearchAreaMap({
-  clipToCountry = false,
-  countryCode,
   latitude,
   longitude,
   onLocationSelect,
@@ -242,17 +54,16 @@ export function SearchAreaMap({
   const mapElementRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    let isActive = true;
     if (!mapElementRef.current) {
       return;
     }
 
-    let isActive = true;
     const center: L.LatLngExpression = [latitude, longitude];
     const map = L.map(mapElementRef.current, {
       attributionControl: true,
       zoomControl: true,
     }).setView(center, 8, { animate: false });
-    map.createPane(RADIUS_FILL_PANE).style.zIndex = '450';
     map.createPane(RADIUS_OUTLINE_PANE).style.zIndex = '650';
 
     const handleMapClick = (event: L.LeafletMouseEvent) => {
@@ -288,14 +99,14 @@ export function SearchAreaMap({
             [latitude - latitudeDelta, longitude - longitudeDelta],
             [latitude + latitudeDelta, longitude + longitudeDelta],
           ];
-    const radiusCircle =
-      radiusMiles === undefined
-        ? null
-        : L.circle(center, {
-            ...radiusStyle,
-            pane: RADIUS_OUTLINE_PANE,
-            radius: radiusMiles * METERS_PER_MILE,
-          }).addTo(map);
+
+    if (radiusMiles !== undefined) {
+      L.circle(center, {
+        ...radiusStyle,
+        pane: RADIUS_OUTLINE_PANE,
+        radius: radiusMiles * METERS_PER_MILE,
+      }).addTo(map);
+    }
 
     L.circleMarker(center, {
       color: '#1d4ed8',
@@ -346,54 +157,14 @@ export function SearchAreaMap({
       });
     }
 
-    if (clipToCountry && countryCode && radiusMiles !== undefined) {
-      void loadCountryBoundary(countryCode).then((boundary) => {
-        if (!isActive) {
-          return;
-        }
-
-        if (!boundary) {
-          return;
-        }
-
-        const radiusFeature = circlePolygon([longitude, latitude], radiusMiles);
-        const clippedFeature = intersect(
-          featureCollection([radiusFeature, boundary]),
-        );
-
-        if (!clippedFeature) {
-          return;
-        }
-
-        L.geoJSON(clippedFeature, {
-          pane: RADIUS_FILL_PANE,
-          style: {
-            ...radiusStyle,
-            color: 'transparent',
-            weight: 0,
-          },
-        }).addTo(map);
-        radiusCircle?.setStyle({ fillOpacity: 0 });
-        radiusCircle?.bringToFront();
-      });
-    }
-
     return () => {
       isActive = false;
       if (onLocationSelect) {
-        map.off('click', handleMapClick);
+        map.off('click');
       }
       map.remove();
     };
-  }, [
-    clipToCountry,
-    countryCode,
-    latitude,
-    longitude,
-    onLocationSelect,
-    radiusMiles,
-    stateName,
-  ]);
+  }, [latitude, longitude, onLocationSelect, radiusMiles, stateName]);
 
   const clickHint = onLocationSelect ? '. Click to choose a search center' : '';
   const ariaLabel = stateName
@@ -411,9 +182,3 @@ export function SearchAreaMap({
     />
   );
 }
-
-const circlePolygon = (center: [number, number], radiusMiles: number) =>
-  circle(center, radiusMiles, {
-    steps: 64,
-    units: 'miles',
-  });
