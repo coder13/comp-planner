@@ -7,6 +7,7 @@ jest.mock('leaflet', () => {
     addTo: jest.fn().mockReturnThis(),
     bringToFront: jest.fn().mockReturnThis(),
     getBounds: jest.fn(),
+    setStyle: jest.fn().mockReturnThis(),
   };
   const map = {
     createPane: jest.fn(() => ({ style: {} })),
@@ -149,6 +150,13 @@ describe('SearchAreaMap', () => {
         expect.objectContaining({ style: expect.any(Object) }),
       );
     });
+    expect(Leaflet.circle).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        pane: 'search-radius-outline',
+        radius: expect.any(Number),
+      }),
+    );
     expect(
       (Leaflet.circle as jest.Mock).mock.results[0]?.value.bringToFront,
     ).toHaveBeenCalled();

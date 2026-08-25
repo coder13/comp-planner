@@ -288,38 +288,14 @@ export function SearchAreaMap({
             [latitude - latitudeDelta, longitude - longitudeDelta],
             [latitude + latitudeDelta, longitude + longitudeDelta],
           ];
-    let circle: L.Circle | null = null;
-    let radiusOutline: L.Circle | null = null;
-
-    const addUnclippedCircle = () => {
-      if (circle || radiusMiles === undefined) {
-        return;
-      }
-
-      circle = L.circle(center, {
-        ...radiusStyle,
-        pane: RADIUS_FILL_PANE,
-        radius: radiusMiles * METERS_PER_MILE,
-      }).addTo(map);
-    };
-
-    const addRadiusOutline = () => {
-      if (radiusOutline || radiusMiles === undefined) {
-        return;
-      }
-
-      radiusOutline = L.circle(center, {
-        ...radiusStyle,
-        fillOpacity: 0,
-        pane: RADIUS_OUTLINE_PANE,
-      }).addTo(map);
-    };
-
-    if (!clipToCountry || !countryCode || radiusMiles === undefined) {
-      addUnclippedCircle();
-    } else {
-      addRadiusOutline();
-    }
+    const radiusCircle =
+      radiusMiles === undefined
+        ? null
+        : L.circle(center, {
+            ...radiusStyle,
+            pane: RADIUS_OUTLINE_PANE,
+            radius: radiusMiles * METERS_PER_MILE,
+          }).addTo(map);
 
     L.circleMarker(center, {
       color: '#1d4ed8',
@@ -377,7 +353,6 @@ export function SearchAreaMap({
         }
 
         if (!boundary) {
-          addUnclippedCircle();
           return;
         }
 
@@ -387,7 +362,6 @@ export function SearchAreaMap({
         );
 
         if (!clippedFeature) {
-          addUnclippedCircle();
           return;
         }
 
@@ -399,7 +373,8 @@ export function SearchAreaMap({
             weight: 0,
           },
         }).addTo(map);
-        radiusOutline?.bringToFront();
+        radiusCircle?.setStyle({ fillOpacity: 0 });
+        radiusCircle?.bringToFront();
       });
     }
 
