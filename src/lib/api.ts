@@ -1,0 +1,324 @@
+import { CityLocation, WcaCompetition } from './types';
+
+const WCA_API_ORIGIN = 'https://api.worldcubeassociation.org';
+const PHOTON_ORIGIN = 'https://photon.komoot.io';
+const COMPETITIONS_PER_PAGE = 25;
+const COMPETITION_PAGE_BATCH_SIZE = 5;
+const MAX_COMPETITION_PAGES = 60;
+export const WCA_COMPETITION_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const COMPETITION_CACHE_STORAGE_PREFIX = 'comp-planner:wca-competitions:v1:';
+
+interface CompetitionCacheEntry {
+  competitions: WcaCompetition[];
+  expiresAt: number;
+}
+
+const competitionMemoryCache = new Map<string, WcaCompetition[]>();
+const competitionInFlight = new Map<string, Promise<WcaCompetition[]>>();
+
+interface PhotonResult {
+  geometry: {
+    coordinates: [number, number];
+  };
+  properties: {
+    city?: string;
+    country?: string;
+    countrycode?: string;
+    name?: string;
+    state?: string;
+    type?: string;
+  };
+}
+
+const requestJson = async <T>(
+  url: string,
+  signal?: AbortSignal,
+): Promise<T> => {
+  const response = await fetch(url, {
+    headers: {
+      Accept: 'application/json',
+    },
+    signal,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Request failed with status ${response.status}.`);
+  }
+
+  return (await response.json()) as T;
+};
+
+const toCityLocation = (result: PhotonResult): CityLocation => {
+  const { properties } = result;
+  const cityName = properties.city ?? properties.name ?? 'Unknown city';
+  const displayName = [cityName, properties.state, properties.country]
+    .filter(Boolean)
+    .join(', ');
+
+  return {
+    cityName,
+    countryCode: properties.countrycode?.toUpperCase() ?? '',
+    countryName: properties.country ?? '',
+    displayName,
+    latitude: result.geometry.coordinates[1],
+    longitude: result.geometry.coordinates[0],
+    stateName: properties.state,
+  };
+};
+
+const normalizeCityIdentity = (value: string) =>
+  value
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLocaleLowerCase()
+    .replace(/\s+/g, ' ');
+
+export const geocodeCities = async (query: string, signal?: AbortSignal) => {
+  const params = new URLSearchParams({
+    limit: '5',
+    q: query,
+  });
+
+  const response = await requestJson<{ features: PhotonResult[] }>(
+    `${PHOTON_ORIGIN}/api/?${params.toString()}`,
+    signal,
+  );
+
+  const cityResults = response.features.filter(
+    (result) => result.properties.type === 'city' || result.properties.city,
+  );
+  const results = cityResults.length > 0 ? cityResults : response.features;
+
+  const seenCities = new Set<string>();
+
+  return results
+    .map(toCityLocation)
+    .filter(
+      (city) =>
+        Number.isFinite(city.latitude) && Number.isFinite(city.longitude),
+    )
+    .filter((city) => {
+      const identity = normalizeCityIdentity(city.displayName);
+      if (seenCities.has(identity)) {
+        return false;
+      }
+
+      seenCities.add(identity);
+      return true;
+    });
+};
+
+const normalizeCompetition = ({
+  cancelled_at,
+  city,
+  country_iso2,
+  end_date,
+  event_ids,
+  id,
+  latitude_degrees,
+  longitude_degrees,
+  name,
+  start_date,
+  url,
+  venue,
+  venue_address,
+  website,
+}: WcaCompetition): WcaCompetition => ({
+  id,
+  name,
+  start_date,
+  end_date,
+  city,
+  venue,
+  venue_address,
+  country_iso2,
+  event_ids: event_ids ?? [],
+  cancelled_at: cancelled_at ?? null,
+  latitude_degrees: latitude_degrees ?? null,
+  longitude_degrees: longitude_degrees ?? null,
+  url: url || `https://www.worldcubeassociation.org/competitions/${id}`,
+  website: website || url,
+});
+
+const getCompetitionCacheKey = (
+  countryCode: string,
+  startDate: string,
+  endDate: string,
+) => `${countryCode.toUpperCase() || 'ALL'}:${startDate}:${endDate}`;
+
+const getStoredCompetitions = (cacheKey: string) => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    const rawEntry = window.localStorage.getItem(
+      `${COMPETITION_CACHE_STORAGE_PREFIX}${cacheKey}`,
+    );
+    if (!rawEntry) {
+      return null;
+    }
+
+    const entry = JSON.parse(rawEntry) as CompetitionCacheEntry;
+    if (entry.expiresAt <= Date.now()) {
+      window.localStorage.removeItem(
+        `${COMPETITION_CACHE_STORAGE_PREFIX}${cacheKey}`,
+      );
+      return null;
+    }
+
+    return entry.competitions;
+  } catch {
+    return null;
+  }
+};
+
+const storeCompetitions = (
+  cacheKey: string,
+  competitions: WcaCompetition[],
+) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    const entry: CompetitionCacheEntry = {
+      competitions,
+      expiresAt: Date.now() + WCA_COMPETITION_CACHE_TTL_MS,
+    };
+    window.localStorage.setItem(
+      `${COMPETITION_CACHE_STORAGE_PREFIX}${cacheKey}`,
+      JSON.stringify(entry),
+    );
+  } catch {
+    // Caching is an optimization. A full or blocked storage area must not
+    // prevent the live WCA request from succeeding.
+  }
+};
+
+const withAbort = <T>(promise: Promise<T>, signal?: AbortSignal) => {
+  if (!signal) {
+    return promise;
+  }
+
+  if (signal.aborted) {
+    return Promise.reject(
+      new DOMException('The request was aborted.', 'AbortError'),
+    );
+  }
+
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () => {
+      reject(new DOMException('The request was aborted.', 'AbortError'));
+    };
+
+    signal.addEventListener('abort', onAbort, { once: true });
+    promise.then(
+      (value) => {
+        signal.removeEventListener('abort', onAbort);
+        resolve(value);
+      },
+      (error: unknown) => {
+        signal.removeEventListener('abort', onAbort);
+        reject(error);
+      },
+    );
+  });
+};
+
+const fetchCompetitionsFromApi = async ({
+  endDate,
+  startDate,
+  countryCode,
+}: {
+  endDate: string;
+  startDate: string;
+  countryCode: string;
+}) => {
+  const competitions: WcaCompetition[] = [];
+
+  const fetchPage = async (page: number) => {
+    const params = new URLSearchParams({
+      end: endDate,
+      page: String(page),
+      start: startDate,
+    });
+
+    if (countryCode) {
+      params.set('country_iso2', countryCode);
+    }
+
+    return requestJson<WcaCompetition[]>(
+      `${WCA_API_ORIGIN}/competitions?${params.toString()}`,
+    );
+  };
+
+  for (
+    let firstPage = 1;
+    firstPage <= MAX_COMPETITION_PAGES;
+    firstPage += COMPETITION_PAGE_BATCH_SIZE
+  ) {
+    const pageResults = await Promise.all(
+      Array.from({ length: COMPETITION_PAGE_BATCH_SIZE }, (_, index) =>
+        fetchPage(firstPage + index),
+      ),
+    );
+
+    pageResults.forEach((results) => {
+      competitions.push(...results.map(normalizeCompetition));
+    });
+
+    if (pageResults.some((results) => results.length < COMPETITIONS_PER_PAGE)) {
+      break;
+    }
+  }
+
+  return competitions;
+};
+
+export const fetchCompetitions = async ({
+  endDate,
+  signal,
+  startDate,
+  countryCode,
+}: {
+  endDate: string;
+  signal?: AbortSignal;
+  startDate: string;
+  countryCode: string;
+}) => {
+  const cacheKey = getCompetitionCacheKey(countryCode, startDate, endDate);
+  const memoryCached = competitionMemoryCache.get(cacheKey);
+  if (memoryCached) {
+    return withAbort(Promise.resolve(memoryCached), signal);
+  }
+
+  const storedCompetitions = getStoredCompetitions(cacheKey);
+  if (storedCompetitions) {
+    competitionMemoryCache.set(cacheKey, storedCompetitions);
+    return withAbort(Promise.resolve(storedCompetitions), signal);
+  }
+
+  const existingRequest = competitionInFlight.get(cacheKey);
+  if (existingRequest) {
+    return withAbort(existingRequest, signal);
+  }
+
+  const request = fetchCompetitionsFromApi({
+    countryCode,
+    endDate,
+    startDate,
+  })
+    .then((competitions) => {
+      competitionMemoryCache.set(cacheKey, competitions);
+      storeCompetitions(cacheKey, competitions);
+      return competitions;
+    })
+    .finally(() => {
+      competitionInFlight.delete(cacheKey);
+    });
+
+  competitionInFlight.set(cacheKey, request);
+  return withAbort(request, signal);
+};

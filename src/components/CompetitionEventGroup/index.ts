@@ -1,0 +1,1 @@
+export { CompetitionEventGroup } from './CompetitionEventGroup';

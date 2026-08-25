@@ -1,0 +1,1 @@
+export { SearchAreaMap } from './SearchAreaMap';
