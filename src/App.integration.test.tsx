@@ -157,6 +157,9 @@ describe('Seattle event search', () => {
     expect(screen.getByText('3×3×3 Cube')).toBeInTheDocument();
     expect(screen.getByText('Pyraminx')).toBeInTheDocument();
     expect(screen.getByText('Tacoma Spring Open 2026')).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Search back' })).toHaveValue(
+      '12',
+    );
 
     const requestsAfterInitialLoad = wcaRequestCount;
     const geocoderRequestsAfterInitialLoad = geocoderRequestCount;

@@ -7,7 +7,7 @@ import {
   WcaCompetition,
 } from './types';
 
-export const LOOKBACK_MONTHS = 24;
+export const DEFAULT_LOOKBACK_MONTHS = 12;
 export const RECENT_MONTHS = 12;
 export const UPCOMING_MONTHS = 12;
 export const KILOMETERS_PER_MILE = 1.609344;
@@ -211,11 +211,12 @@ export const getDateString = (date = new Date()) => {
 export const getSearchDateRange = (
   asOfDate: string,
   includeUpcoming = false,
+  lookbackMonths = DEFAULT_LOOKBACK_MONTHS,
 ) => ({
   endDate: includeUpcoming
     ? formatDate(dateMonthsFrom(toDate(asOfDate), UPCOMING_MONTHS))
     : asOfDate,
-  startDate: formatDate(dateMonthsAgo(toDate(asOfDate), LOOKBACK_MONTHS)),
+  startDate: formatDate(dateMonthsAgo(toDate(asOfDate), lookbackMonths)),
 });
 
 export const getDistanceMiles = (

@@ -24,6 +24,7 @@ import {
   getSearchDateRange,
   getRegionForState,
   getSearchScopeLabel,
+  DEFAULT_LOOKBACK_MONTHS,
   SearchScope,
   SearchScopeMode,
 } from './lib/planner';
@@ -44,6 +45,7 @@ import {
 const DEFAULT_CITY_QUERY = 'Seattle, Washington';
 const DEFAULT_RADIUS_MILES = 50;
 const DEFAULT_DATE = getDateString();
+const LOOKBACK_OPTIONS = [3, 6, 12, 18, 24, 36];
 type ViewMode = 'event' | 'competition';
 
 const getScopeForCity = (
@@ -72,6 +74,9 @@ function App() {
     WcaCompetition[]
   >([]);
   const [asOfDate, setAsOfDate] = useState(DEFAULT_DATE);
+  const [lookbackMonths, setLookbackMonths] = useState(
+    String(DEFAULT_LOOKBACK_MONTHS),
+  );
   const [includeUpcoming, setIncludeUpcoming] = useState(false);
   const [sameCountryOnly, setSameCountryOnly] = useState(true);
   const [radiusMiles, setRadiusMiles] = useState(String(DEFAULT_RADIUS_MILES));
@@ -110,13 +115,18 @@ function App() {
       scope: SearchScope,
       shouldIncludeUpcoming: boolean,
       shouldSearchSameCountryOnly: boolean,
+      searchLookbackMonths: number,
     ) => {
       if (
         !date ||
         (scope.mode === 'radius' &&
-          (!Number.isFinite(scope.radiusMiles) || scope.radiusMiles <= 0))
+          (!Number.isFinite(scope.radiusMiles) || scope.radiusMiles <= 0)) ||
+        !Number.isInteger(searchLookbackMonths) ||
+        searchLookbackMonths <= 0
       ) {
-        setError('Enter a date and a radius greater than zero.');
+        setError(
+          'Enter a date, a valid history window, and a radius greater than zero.',
+        );
         return;
       }
 
@@ -126,6 +136,7 @@ function App() {
       const { endDate, startDate } = getSearchDateRange(
         date,
         shouldIncludeUpcoming,
+        searchLookbackMonths,
       );
 
       setSelectedCity(city);
@@ -211,6 +222,7 @@ function App() {
             },
             false,
             true,
+            DEFAULT_LOOKBACK_MONTHS,
           );
         }
       } catch (caughtError) {
@@ -586,6 +598,9 @@ function App() {
       },
       includeUpcoming,
       sameCountryOnly,
+      Number.isInteger(Number(lookbackMonths)) && Number(lookbackMonths) > 0
+        ? Number(lookbackMonths)
+        : DEFAULT_LOOKBACK_MONTHS,
     );
   };
 
@@ -620,6 +635,9 @@ function App() {
       getScopeForCity(scopeMode, selectedCity, radius),
       includeUpcoming,
       sameCountryOnly,
+      Number.isInteger(Number(lookbackMonths)) && Number(lookbackMonths) > 0
+        ? Number(lookbackMonths)
+        : DEFAULT_LOOKBACK_MONTHS,
     );
   };
 
@@ -699,11 +717,12 @@ function App() {
 
         <section className="mt-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
           <div className="grid gap-4 sm:grid-cols-[minmax(140px,0.32fr)_minmax(0,1fr)] sm:items-start">
-            <div className="space-y-3">
+            <div className="space-y-3" aria-label="Time">
+              <h2 className="text-sm font-semibold text-gray-900">Time</h2>
               <label
                 className="block text-sm font-medium text-gray-700"
                 htmlFor="as-of-date">
-                As of date
+                Target date
                 <input
                   id="as-of-date"
                   className="focus-ring mt-1 h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900"
@@ -711,6 +730,22 @@ function App() {
                   value={asOfDate}
                   onChange={(event) => setAsOfDate(event.target.value)}
                 />
+              </label>
+              <label
+                className="block text-sm font-medium text-gray-700"
+                htmlFor="history-months">
+                Search back
+                <select
+                  id="history-months"
+                  className="focus-ring mt-1 h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900"
+                  value={lookbackMonths}
+                  onChange={(event) => setLookbackMonths(event.target.value)}>
+                  {LOOKBACK_OPTIONS.map((months) => (
+                    <option key={months} value={months}>
+                      {months} months
+                    </option>
+                  ))}
+                </select>
               </label>
               <UpcomingCompetitionToggle
                 checked={includeUpcoming}

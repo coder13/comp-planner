@@ -89,6 +89,13 @@ describe('getEventSummaries', () => {
   it('extends the WCA request by 12 months when upcoming competitions are included', () => {
     expect(getSearchDateRange('2026-08-24', true)).toEqual({
       endDate: '2027-08-24',
+      startDate: '2025-08-24',
+    });
+  });
+
+  it('uses the selected history window for the WCA request', () => {
+    expect(getSearchDateRange('2026-08-24', false, 24)).toEqual({
+      endDate: '2026-08-24',
       startDate: '2024-08-24',
     });
   });
