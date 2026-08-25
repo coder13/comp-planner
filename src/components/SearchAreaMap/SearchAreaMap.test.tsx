@@ -5,6 +5,7 @@ import { SearchAreaMap } from './SearchAreaMap';
 jest.mock('leaflet', () => {
   const circle = {
     addTo: jest.fn().mockReturnThis(),
+    bringToFront: jest.fn().mockReturnThis(),
     getBounds: jest.fn(),
   };
   const map = {
@@ -147,5 +148,8 @@ describe('SearchAreaMap', () => {
         expect.objectContaining({ style: expect.any(Object) }),
       );
     });
+    expect(
+      (Leaflet.circle as jest.Mock).mock.results[0]?.value.bringToFront,
+    ).toHaveBeenCalled();
   });
 });

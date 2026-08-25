@@ -400,6 +400,7 @@ export function SearchAreaMap({
             weight: 0,
           },
         }).addTo(map);
+        radiusOutline?.bringToFront();
       });
     }
 
