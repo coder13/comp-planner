@@ -87,7 +87,7 @@ describe('Seattle event search', () => {
       ) {
         if (url.includes('/me?')) {
           return responseFor({
-            me: {
+            user: {
               id: 1,
               name: 'WCA User',
               wca_id: '2020USER01',

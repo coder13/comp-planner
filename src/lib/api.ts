@@ -504,7 +504,9 @@ export const searchCompetitions = async (
 };
 
 interface WcaMeResponse {
-  me: WcaUser;
+  user?: WcaUser;
+  // Keep accepting the legacy response shape for compatibility.
+  me?: WcaUser;
   upcoming_competitions?: WcaCompetitionPayload[];
   ongoing_competitions?: WcaCompetitionPayload[];
 }
@@ -538,5 +540,10 @@ export const fetchMyCompetitions = async (
     })
     .sort((first, second) => first.start_date.localeCompare(second.start_date));
 
-  return { competitions, user: response.me };
+  const user = response.user ?? response.me;
+  if (!user) {
+    throw new Error('The WCA account response did not include a user.');
+  }
+
+  return { competitions, user };
 };

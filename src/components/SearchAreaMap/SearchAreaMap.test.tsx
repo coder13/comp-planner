@@ -9,6 +9,7 @@ jest.mock('leaflet', () => {
     getBounds: jest.fn(),
   };
   const map = {
+    createPane: jest.fn(() => ({ style: {} })),
     fitBounds: jest.fn(),
     off: jest.fn(),
     on: jest.fn(),

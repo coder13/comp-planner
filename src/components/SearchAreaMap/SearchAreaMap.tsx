@@ -21,6 +21,8 @@ interface SearchAreaMapProps {
 
 const METERS_PER_MILE = 1609.344;
 const MILES_PER_LATITUDE_DEGREE = 69;
+const RADIUS_FILL_PANE = 'search-radius-fill';
+const RADIUS_OUTLINE_PANE = 'search-radius-outline';
 const STATE_BOUNDARIES_URL =
   'https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json';
 const COUNTRY_BOUNDARIES_URL =
@@ -250,6 +252,8 @@ export function SearchAreaMap({
       attributionControl: true,
       zoomControl: true,
     }).setView(center, 8, { animate: false });
+    map.createPane(RADIUS_FILL_PANE).style.zIndex = '450';
+    map.createPane(RADIUS_OUTLINE_PANE).style.zIndex = '650';
 
     const handleMapClick = (event: L.LeafletMouseEvent) => {
       onLocationSelect?.(event.latlng.lat, event.latlng.lng);
@@ -294,6 +298,7 @@ export function SearchAreaMap({
 
       circle = L.circle(center, {
         ...radiusStyle,
+        pane: RADIUS_FILL_PANE,
         radius: radiusMiles * METERS_PER_MILE,
       }).addTo(map);
     };
@@ -306,6 +311,7 @@ export function SearchAreaMap({
       radiusOutline = L.circle(center, {
         ...radiusStyle,
         fillOpacity: 0,
+        pane: RADIUS_OUTLINE_PANE,
       }).addTo(map);
     };
 
@@ -386,6 +392,7 @@ export function SearchAreaMap({
         }
 
         L.geoJSON(clippedFeature, {
+          pane: RADIUS_FILL_PANE,
           style: {
             ...radiusStyle,
             color: 'transparent',

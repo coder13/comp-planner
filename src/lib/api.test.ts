@@ -52,7 +52,7 @@ describe('fetchMyCompetitions', () => {
   it('loads and de-duplicates authenticated upcoming competitions', async () => {
     globalThis.fetch = jest.fn().mockResolvedValue({
       json: async () => ({
-        me: { id: 1, name: 'WCA User', wca_id: '2020USER01' },
+        user: { id: 1, name: 'WCA User', wca_id: '2020USER01' },
         ongoing_competitions: [
           {
             id: 'SeattleSummerOpen2026',
