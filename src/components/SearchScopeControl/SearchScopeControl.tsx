@@ -55,8 +55,8 @@ export function SearchScopeControl({
     <section aria-label="Search area">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-          <span className="flex size-7 items-center justify-center rounded-md bg-blue-50 text-blue-600">
-            <CompassIcon className="size-4" />
+          <span className="flex size-5 items-center justify-center rounded-md bg-blue-50 text-blue-600">
+            <CompassIcon className="size-3.5" />
           </span>
           Search area
         </div>
