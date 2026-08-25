@@ -161,6 +161,9 @@ describe('Seattle event search', () => {
       'aria-pressed',
       'true',
     );
+    expect(
+      screen.getByRole('columnheader', { name: 'Age' }),
+    ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'By competition' }));
     expect(
       screen.getByRole('region', { name: 'Event results' }),

@@ -731,7 +731,7 @@ function App() {
               <div
                 className={`grid gap-4 border-b border-gray-200 bg-gray-50 px-5 py-2 text-xs font-medium text-gray-500 sm:px-6 ${
                   viewMode === 'event'
-                    ? 'sm:grid-cols-[minmax(0,0.85fr)_minmax(180px,1.4fr)_minmax(130px,0.5fr)]'
+                    ? 'sm:grid-cols-[minmax(0,0.85fr)_minmax(180px,1.2fr)_minmax(110px,0.5fr)_minmax(130px,0.5fr)]'
                     : 'sm:grid-cols-[minmax(0,0.85fr)_minmax(130px,0.5fr)]'
                 }`}
                 role="row">
@@ -739,6 +739,7 @@ function App() {
                 {viewMode === 'event' && (
                   <span role="columnheader">Last held</span>
                 )}
+                {viewMode === 'event' && <span role="columnheader">Age</span>}
                 <span role="columnheader" className="text-right">
                   Times held in last year
                 </span>

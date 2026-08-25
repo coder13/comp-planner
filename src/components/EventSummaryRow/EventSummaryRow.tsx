@@ -9,8 +9,18 @@ interface EventSummaryRowProps {
   showCompetition?: boolean;
 }
 
-const UNDER_HELD_COLOR = [224, 244, 235] as const;
-const OVER_SATURATED_COLOR = [249, 225, 216] as const;
+const UNDER_HELD_COLOR = [87, 187, 138] as const;
+const MIDPOINT_COLOR = [255, 255, 255] as const;
+const OVER_SATURATED_COLOR = [224, 102, 102] as const;
+
+const interpolateColor = (
+  firstColor: readonly number[],
+  secondColor: readonly number[],
+  ratio: number,
+) =>
+  firstColor.map((channel, index) =>
+    Math.round(channel + (secondColor[index] - channel) * ratio),
+  );
 
 const getHeldCountBackground = (
   heldInLast12Months: number,
@@ -20,12 +30,14 @@ const getHeldCountBackground = (
     maxHeldInLast12Months > 0
       ? Math.min(heldInLast12Months / maxHeldInLast12Months, 1)
       : 0;
-  const color = UNDER_HELD_COLOR.map((underHeldChannel, index) =>
-    Math.round(
-      underHeldChannel +
-        (OVER_SATURATED_COLOR[index] - underHeldChannel) * ratio,
-    ),
-  );
+  const color =
+    ratio <= 0.5
+      ? interpolateColor(UNDER_HELD_COLOR, MIDPOINT_COLOR, ratio * 2)
+      : interpolateColor(
+          MIDPOINT_COLOR,
+          OVER_SATURATED_COLOR,
+          (ratio - 0.5) * 2,
+        );
 
   return `rgb(${color.join(', ')})`;
 };
@@ -40,7 +52,7 @@ export function EventSummaryRow({
     <article
       className={`grid gap-4 border-t border-line-light px-5 py-4 sm:items-center sm:px-6 ${
         showCompetition
-          ? 'sm:grid-cols-[minmax(0,0.85fr)_minmax(180px,1.4fr)_minmax(130px,0.5fr)]'
+          ? 'sm:grid-cols-[minmax(0,0.85fr)_minmax(180px,1.2fr)_minmax(110px,0.5fr)_minmax(130px,0.5fr)]'
           : 'sm:grid-cols-[minmax(0,0.85fr)_minmax(130px,0.5fr)]'
       }`}
       style={{
@@ -79,15 +91,16 @@ export function EventSummaryRow({
           )}
           <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink/45">
             <span className="inline-flex items-center gap-1.5">
-              <span className="font-medium text-ink/65">
-                {formatRelativeAge(event.lastHeldDate, asOfDate)}
-              </span>
-            </span>
-            <span className="inline-flex items-center gap-1.5">
               <CalendarIcon className="size-3.5" />
               {formatCompetitionDate(event.lastHeldDate)}
             </span>
           </div>
+        </div>
+      )}
+
+      {showCompetition && (
+        <div className="text-xs font-medium text-ink/65">
+          {formatRelativeAge(event.lastHeldDate, asOfDate)}
         </div>
       )}
 
