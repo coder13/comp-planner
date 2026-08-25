@@ -31,7 +31,7 @@ export function UpcomingCompetitionToggle({
         <span className="block text-sm font-medium text-gray-700">
           Include upcoming
         </span>
-        <span className="block text-xs text-gray-500">Next 12 months</span>
+        <span className="block text-xs text-gray-500">Next 2 years</span>
       </span>
     </label>
   );

@@ -8,7 +8,7 @@ import {
 } from './types';
 
 export const DEFAULT_LOOKBACK_MONTHS = 12;
-export const UPCOMING_MONTHS = 12;
+export const UPCOMING_MONTHS = 24;
 export const KILOMETERS_PER_MILE = 1.609344;
 
 const COUNTRY_NEIGHBORS: Record<string, string[]> = {

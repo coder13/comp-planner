@@ -140,7 +140,7 @@ describe('Seattle event search', () => {
             }),
           ];
 
-          if (new URL(url).searchParams.get('end') === '2027-08-24') {
+          if (new URL(url).searchParams.get('end') === '2028-08-24') {
             competitions.push(
               competition({
                 id: 'SeattleFallOpen2026',
