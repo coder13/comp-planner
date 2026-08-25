@@ -257,7 +257,7 @@ export function SearchAreaMap({
     const map = L.map(mapElementRef.current, {
       attributionControl: true,
       zoomControl: true,
-    }).setView(center, 8);
+    }).setView(center, 8, { animate: false });
 
     const handleMapClick = (event: L.LeafletMouseEvent) => {
       onLocationSelect?.(event.latlng.lat, event.latlng.lng);
@@ -347,11 +347,13 @@ export function SearchAreaMap({
         ).addTo(map);
 
         map.fitBounds(boundary.getBounds(), {
+          animate: false,
           padding: [24, 24],
         });
       });
     } else if (radiusBounds) {
       map.fitBounds(radiusBounds, {
+        animate: false,
         padding: [24, 24],
       });
     }

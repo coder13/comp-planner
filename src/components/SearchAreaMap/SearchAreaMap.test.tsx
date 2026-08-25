@@ -43,6 +43,14 @@ describe('SearchAreaMap', () => {
     expect(
       screen.getByRole('img', { name: 'Map showing a 50-mile search radius' }),
     ).toBeInTheDocument();
+
+    const map = (Leaflet.map as jest.Mock).mock.results.slice(-1)[0]?.value as {
+      fitBounds: jest.Mock;
+    };
+    expect(map.fitBounds).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ animate: false }),
+    );
   });
 
   it('describes a state boundary map', () => {
