@@ -428,7 +428,7 @@ export function SearchAreaMap({
   return (
     <div
       ref={mapElementRef}
-      className={`h-64 w-full overflow-hidden rounded-md border border-gray-200 bg-blue-50 ${
+      className={`h-96 w-full overflow-hidden rounded-md border border-gray-200 bg-blue-50 ${
         onLocationSelect ? 'cursor-crosshair' : ''
       }`}
       role="img"

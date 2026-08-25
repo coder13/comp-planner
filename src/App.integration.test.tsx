@@ -165,7 +165,10 @@ describe('Seattle event search', () => {
       'true',
     );
     expect(
-      screen.getByRole('columnheader', { name: 'Age' }),
+      screen.getByRole('columnheader', { name: 'Competition' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('columnheader', { name: 'Last held' }),
     ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'By competition' }));
     expect(

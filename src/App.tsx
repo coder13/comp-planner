@@ -837,9 +837,11 @@ function App() {
                 role="row">
                 <span role="columnheader">Event</span>
                 {viewMode === 'event' && (
+                  <span role="columnheader">Competition</span>
+                )}
+                {viewMode === 'event' && (
                   <span role="columnheader">Last held</span>
                 )}
-                {viewMode === 'event' && <span role="columnheader">Age</span>}
                 <span role="columnheader" className="text-right">
                   Times held in last year
                 </span>

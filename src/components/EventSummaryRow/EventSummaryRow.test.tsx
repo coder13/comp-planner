@@ -22,7 +22,7 @@ describe('EventSummaryRow', () => {
     expect(screen.getByText('3×3×3 Cube')).toBeInTheDocument();
     expect(screen.getByText('7')).toBeInTheDocument();
     expect(screen.getByText('3×3×3 Cube').closest('article')).toHaveStyle(
-      'background-color: rgba(224, 102, 102, 0.5)',
+      'background-color: rgba(87, 187, 138, 0.5)',
     );
     expect(
       screen.queryByText('Held 7 times in the last year'),

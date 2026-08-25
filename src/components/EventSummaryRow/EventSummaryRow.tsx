@@ -9,9 +9,9 @@ interface EventSummaryRowProps {
   showCompetition?: boolean;
 }
 
-const UNDER_HELD_COLOR = [87, 187, 138] as const;
+const UNDER_HELD_COLOR = [224, 102, 102] as const;
 const MIDPOINT_COLOR = [255, 255, 255] as const;
-const OVER_SATURATED_COLOR = [224, 102, 102] as const;
+const OVER_SATURATED_COLOR = [87, 187, 138] as const;
 
 const interpolateColor = (
   firstColor: readonly number[],
