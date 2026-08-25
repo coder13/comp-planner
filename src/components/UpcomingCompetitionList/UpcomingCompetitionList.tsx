@@ -33,9 +33,7 @@ export function UpcomingCompetitionList({
             className="text-base font-semibold text-gray-900">
             Upcoming competitions
           </h3>
-          <p className="mt-1 text-xs text-gray-600">
-            Next 12 months · visible in the WCA data
-          </p>
+          <p className="mt-1 text-xs text-gray-600">Next 12 months</p>
         </div>
         <span className="text-sm font-semibold text-gray-700">
           {competitions.length}
