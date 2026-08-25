@@ -19,6 +19,7 @@ import {
   formatCompetitionDate,
   getDateString,
   getEventSummaries,
+  getSearchCountryCodes,
   getSearchDateRange,
   getRegionForState,
   getSearchScopeLabel,
@@ -71,6 +72,7 @@ function App() {
   >([]);
   const [asOfDate, setAsOfDate] = useState(DEFAULT_DATE);
   const [includeUpcoming, setIncludeUpcoming] = useState(false);
+  const [sameCountryOnly, setSameCountryOnly] = useState(true);
   const [radiusMiles, setRadiusMiles] = useState(String(DEFAULT_RADIUS_MILES));
   const [scopeMode, setScopeMode] = useState<SearchScopeMode>('radius');
   const [selectedCity, setSelectedCity] = useState<CityLocation | null>(null);
@@ -104,6 +106,7 @@ function App() {
       date: string,
       scope: SearchScope,
       shouldIncludeUpcoming: boolean,
+      shouldSearchSameCountryOnly: boolean,
     ) => {
       if (
         !date ||
@@ -130,12 +133,33 @@ function App() {
       setIsLoading(true);
 
       try {
-        const competitions = await fetchCompetitions({
-          countryCode: city.countryCode,
-          endDate,
-          signal: controller.signal,
-          startDate,
-        });
+        const countryCodes = getSearchCountryCodes(
+          city.countryCode,
+          shouldSearchSameCountryOnly,
+        );
+        if (countryCodes.length === 0) {
+          setSummaryResults(null);
+          setError('The selected city does not include a country code.');
+          return;
+        }
+
+        const countryCompetitions = await Promise.all(
+          countryCodes.map((countryCode) =>
+            fetchCompetitions({
+              countryCode,
+              endDate,
+              signal: controller.signal,
+              startDate,
+            }),
+          ),
+        );
+        const competitions = Array.from(
+          new Map(
+            countryCompetitions
+              .flat()
+              .map((competition) => [competition.id, competition]),
+          ).values(),
+        );
         const results = getEventSummaries(competitions, city, date, scope);
 
         if (!controller.signal.aborted) {
@@ -183,6 +207,7 @@ function App() {
               radiusMiles: DEFAULT_RADIUS_MILES,
             },
             false,
+            true,
           );
         }
       } catch (caughtError) {
@@ -494,6 +519,7 @@ function App() {
           Number.isFinite(radius) && radius > 0 ? radius : DEFAULT_RADIUS_MILES,
       },
       includeUpcoming,
+      sameCountryOnly,
     );
   };
 
@@ -527,6 +553,7 @@ function App() {
       asOfDate,
       getScopeForCity(scopeMode, selectedCity, radius),
       includeUpcoming,
+      sameCountryOnly,
     );
   };
 
@@ -631,9 +658,11 @@ function App() {
               longitude={selectedCity?.longitude}
               radiusMiles={radiusMiles}
               region={selectedRegion}
+              sameCountryOnly={sameCountryOnly}
               stateName={selectedCity?.stateName}
               onModeChange={setScopeMode}
               onRadiusChange={setRadiusMiles}
+              onSameCountryOnlyChange={setSameCountryOnly}
             />
           </div>
 

@@ -47,11 +47,13 @@ const responseFor = (body: unknown) =>
 describe('Seattle event search', () => {
   const originalFetch = globalThis.fetch;
   let wcaRequestCount = 0;
+  let wcaRequestUrls: string[] = [];
   let geocoderRequestCount = 0;
 
   beforeEach(() => {
     window.localStorage.clear();
     wcaRequestCount = 0;
+    wcaRequestUrls = [];
     geocoderRequestCount = 0;
     globalThis.fetch = jest.fn((input: RequestInfo | URL) => {
       const url = String(input);
@@ -94,6 +96,7 @@ describe('Seattle event search', () => {
         }
 
         wcaRequestCount += 1;
+        wcaRequestUrls.push(url);
         const requestUrl = new URL(url);
         if (requestUrl.searchParams.has('q')) {
           return responseFor([competition({})]) as Promise<Response>;
@@ -214,6 +217,37 @@ describe('Seattle event search', () => {
     });
     expect(screen.getByText('Events in this competition')).toBeInTheDocument();
     expect(screen.getByText('Suggested events')).toBeInTheDocument();
+  });
+
+  it('searches neighboring countries only when same-country search is disabled', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('region', { name: 'Search results' }),
+      ).toBeInTheDocument();
+    });
+
+    const sameCountryCheckbox = screen.getByRole('checkbox', {
+      name: 'Same country',
+    });
+    expect(sameCountryCheckbox).toBeChecked();
+    await user.click(sameCountryCheckbox);
+    await user.click(screen.getByRole('button', { name: 'Search' }));
+
+    await waitFor(() => {
+      const countryCodes = wcaRequestUrls.map((url) =>
+        new URL(url).searchParams.get('country_iso2'),
+      );
+      expect(countryCodes).toContain('CA');
+      expect(countryCodes).toContain('MX');
+    });
+    expect(
+      wcaRequestUrls.some(
+        (url) => !new URL(url).searchParams.has('country_iso2'),
+      ),
+    ).toBe(false);
   });
 
   it('searches public competitions while signed out', async () => {

@@ -12,6 +12,77 @@ export const RECENT_MONTHS = 12;
 export const UPCOMING_MONTHS = 12;
 export const KILOMETERS_PER_MILE = 1.609344;
 
+const COUNTRY_NEIGHBORS: Record<string, string[]> = {
+  AT: ['CH', 'CZ', 'DE', 'HU', 'IT', 'LI', 'SK', 'SI'],
+  AU: [],
+  BE: ['DE', 'FR', 'LU', 'NL'],
+  BR: ['AR', 'BO', 'CO', 'GF', 'GY', 'PE', 'PY', 'SR', 'UY', 'VE'],
+  CA: ['US'],
+  CH: ['AT', 'DE', 'FR', 'IT', 'LI'],
+  CL: ['AR', 'BO', 'PE'],
+  CN: [
+    'AF',
+    'BT',
+    'IN',
+    'KG',
+    'KZ',
+    'LA',
+    'MM',
+    'MN',
+    'NP',
+    'KP',
+    'PK',
+    'RU',
+    'TJ',
+    'VN',
+  ],
+  CO: ['BR', 'EC', 'PA', 'PE', 'VE'],
+  CZ: ['AT', 'DE', 'PL', 'SK'],
+  DE: ['AT', 'BE', 'CH', 'CZ', 'DK', 'FR', 'LU', 'NL', 'PL'],
+  DK: ['DE'],
+  EC: ['CO', 'PE'],
+  ES: ['AD', 'FR', 'PT'],
+  FI: ['NO', 'RU', 'SE'],
+  FR: ['AD', 'BE', 'CH', 'DE', 'ES', 'IT', 'LU', 'MC'],
+  GB: ['IE'],
+  HU: ['AT', 'HR', 'RO', 'RS', 'SI', 'SK', 'UA'],
+  IE: ['GB'],
+  IN: ['BD', 'BT', 'CN', 'MM', 'NP', 'PK'],
+  IT: ['AT', 'CH', 'FR', 'SI', 'SM', 'VA'],
+  JP: [],
+  KR: [],
+  MX: ['BZ', 'GT', 'US'],
+  NL: ['BE', 'DE'],
+  NO: ['FI', 'RU', 'SE'],
+  NZ: [],
+  PE: ['BO', 'BR', 'CL', 'CO', 'EC'],
+  PL: ['BY', 'CZ', 'DE', 'LT', 'RU', 'SK', 'UA'],
+  PT: ['ES'],
+  SE: ['FI', 'NO'],
+  SI: ['AT', 'HR', 'HU', 'IT'],
+  SK: ['AT', 'CZ', 'HU', 'PL', 'UA'],
+  US: ['CA', 'MX'],
+};
+
+export const getSearchCountryCodes = (
+  countryCode: string,
+  sameCountryOnly: boolean,
+) => {
+  const normalizedCountryCode = countryCode.trim().toUpperCase();
+  if (!normalizedCountryCode) {
+    return [];
+  }
+
+  if (sameCountryOnly) {
+    return [normalizedCountryCode];
+  }
+
+  return [
+    normalizedCountryCode,
+    ...(COUNTRY_NEIGHBORS[normalizedCountryCode] ?? []),
+  ];
+};
+
 export type SearchScopeMode = 'radius' | 'state' | 'region';
 
 export interface SearchRegion {

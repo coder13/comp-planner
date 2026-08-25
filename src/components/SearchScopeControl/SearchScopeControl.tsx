@@ -8,9 +8,11 @@ interface SearchScopeControlProps {
   longitude?: number;
   radiusMiles: string;
   region: SearchRegion | null;
+  sameCountryOnly: boolean;
   stateName?: string;
   onModeChange: (mode: SearchScopeMode) => void;
   onRadiusChange: (radiusMiles: string) => void;
+  onSameCountryOnlyChange: (sameCountryOnly: boolean) => void;
 }
 
 const MIN_RADIUS_MILES = 1;
@@ -22,9 +24,11 @@ export function SearchScopeControl({
   longitude,
   radiusMiles,
   region,
+  sameCountryOnly,
   stateName,
   onModeChange,
   onRadiusChange,
+  onSameCountryOnlyChange,
 }: SearchScopeControlProps) {
   const numericRadius = Number(radiusMiles);
   const mapRadius =
@@ -33,11 +37,25 @@ export function SearchScopeControl({
   return (
     <section aria-label="Search area">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-          <span className="flex size-7 items-center justify-center rounded-md bg-blue-50 text-blue-600">
-            <CompassIcon className="size-4" />
-          </span>
-          Search area
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+            <span className="flex size-7 items-center justify-center rounded-md bg-blue-50 text-blue-600">
+              <CompassIcon className="size-4" />
+            </span>
+            Search area
+          </div>
+          <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+            <input
+              className="size-4 accent-blue-600"
+              type="checkbox"
+              checked={sameCountryOnly}
+              onChange={(event) =>
+                onSameCountryOnlyChange(event.target.checked)
+              }
+              aria-label="Same country"
+            />
+            Same country
+          </label>
         </div>
         <div
           className="inline-flex rounded-md border border-gray-300 bg-gray-50 p-0.5"

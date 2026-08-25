@@ -10,8 +10,10 @@ describe('SearchScopeControl', () => {
         mode="radius"
         radiusMiles="50"
         region={null}
+        sameCountryOnly={true}
         onModeChange={jest.fn()}
         onRadiusChange={onRadiusChange}
+        onSameCountryOnlyChange={jest.fn()}
       />,
     );
 
@@ -31,9 +33,11 @@ describe('SearchScopeControl', () => {
           name: 'Pacific Northwest',
           states: ['Alaska', 'Washington', 'Oregon'],
         }}
+        sameCountryOnly={true}
         stateName="Washington"
         onModeChange={jest.fn()}
         onRadiusChange={jest.fn()}
+        onSameCountryOnlyChange={jest.fn()}
       />,
     );
 
@@ -41,5 +45,27 @@ describe('SearchScopeControl', () => {
     expect(
       screen.getByRole('button', { name: 'Pacific Northwest' }),
     ).toBeInTheDocument();
+  });
+
+  it('changes the same-country setting', () => {
+    const onSameCountryOnlyChange = jest.fn();
+
+    render(
+      <SearchScopeControl
+        mode="radius"
+        radiusMiles="50"
+        region={null}
+        sameCountryOnly={true}
+        onModeChange={jest.fn()}
+        onRadiusChange={jest.fn()}
+        onSameCountryOnlyChange={onSameCountryOnlyChange}
+      />,
+    );
+
+    const checkbox = screen.getByRole('checkbox', { name: 'Same country' });
+    expect(checkbox).toBeChecked();
+    fireEvent.click(checkbox);
+
+    expect(onSameCountryOnlyChange).toHaveBeenCalledWith(false);
   });
 });

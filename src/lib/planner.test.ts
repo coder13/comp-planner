@@ -1,4 +1,8 @@
-import { getEventSummaries, getSearchDateRange } from './planner';
+import {
+  getEventSummaries,
+  getSearchCountryCodes,
+  getSearchDateRange,
+} from './planner';
 import { WcaCompetition } from './types';
 
 const competition = (overrides: Partial<WcaCompetition>): WcaCompetition => ({
@@ -137,5 +141,13 @@ describe('getEventSummaries', () => {
       '222',
       '333',
     ]);
+  });
+});
+
+describe('getSearchCountryCodes', () => {
+  it('keeps same-country searches narrow and adds only known neighbors', () => {
+    expect(getSearchCountryCodes('US', true)).toEqual(['US']);
+    expect(getSearchCountryCodes('US', false)).toEqual(['US', 'CA', 'MX']);
+    expect(getSearchCountryCodes('ZZ', false)).toEqual(['ZZ']);
   });
 });

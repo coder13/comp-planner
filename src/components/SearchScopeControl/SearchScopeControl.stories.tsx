@@ -16,8 +16,10 @@ const meta = {
     stateName: 'Washington',
     latitude: 47.6062,
     longitude: -122.3321,
+    sameCountryOnly: true,
     onModeChange: fn(),
     onRadiusChange: fn(),
+    onSameCountryOnlyChange: fn(),
   },
   decorators: [
     (Story) => (
