@@ -28,8 +28,13 @@ export function CompetitionEventGroup({
   return (
     <article className="overflow-hidden border-t border-line-light first:border-t-0">
       <header className="bg-paper px-5 py-5 sm:px-6">
-        <p className="text-sm font-medium text-coral-dark">
-          {formatRelativeAge(group.lastHeldDate, asOfDate)}
+        <p
+          className={`text-sm font-medium ${
+            group.lastHeldDate ? 'text-coral-dark' : 'text-ink/55'
+          }`}>
+          {group.lastHeldDate
+            ? formatRelativeAge(group.lastHeldDate, asOfDate)
+            : 'Never held in search area'}
         </p>
         {group.competitionUrl ? (
           <a
@@ -45,12 +50,14 @@ export function CompetitionEventGroup({
             {group.competitionName}
           </h3>
         )}
-        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink/50">
-          <span className="inline-flex items-center gap-1.5">
-            <CalendarIcon className="size-3.5" />
-            {formatCompetitionDate(group.lastHeldDate)}
-          </span>
-        </div>
+        {group.lastHeldDate && (
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink/50">
+            <span className="inline-flex items-center gap-1.5">
+              <CalendarIcon className="size-3.5" />
+              {formatCompetitionDate(group.lastHeldDate)}
+            </span>
+          </div>
+        )}
       </header>
 
       <div>

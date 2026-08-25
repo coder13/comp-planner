@@ -152,6 +152,18 @@ describe('Seattle event search', () => {
             );
           }
 
+          if (requestUrl.searchParams.get('start') === '2024-08-24') {
+            competitions.push(
+              competition({
+                id: 'OldHistoryOpen2024',
+                name: 'Old History Open 2024',
+                start_date: '2024-09-12',
+                end_date: '2024-09-13',
+                event_ids: ['444'],
+              }),
+            );
+          }
+
           return responseFor(competitions) as Promise<Response>;
         }
 
@@ -185,6 +197,9 @@ describe('Seattle event search', () => {
 
     const requestsAfterInitialLoad = wcaRequestCount;
     const geocoderRequestsAfterInitialLoad = geocoderRequestCount;
+    expect(
+      wcaRequestUrls.every((url) => new URL(url).searchParams.has('per_page')),
+    ).toBe(true);
     expect(screen.getByRole('button', { name: 'By event' })).toHaveAttribute(
       'aria-pressed',
       'true',
@@ -216,7 +231,7 @@ describe('Seattle event search', () => {
         screen.queryByText('Tacoma Spring Open 2026'),
       ).not.toBeInTheDocument();
     });
-    expect(screen.queryByText('Pyraminx')).not.toBeInTheDocument();
+    expect(screen.getByText('Pyraminx')).toBeInTheDocument();
     expect(geocoderRequestCount).toBe(geocoderRequestsAfterInitialLoad);
   });
 
@@ -245,6 +260,45 @@ describe('Seattle event search', () => {
     });
     expect(screen.getByText('Events in this competition')).toBeInTheDocument();
     expect(screen.getByText('Suggested events')).toBeInTheDocument();
+  });
+
+  it('fetches the expanded history window after changing search back', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('region', { name: 'Search results' }),
+      ).toBeInTheDocument();
+    });
+
+    const historySelect = screen.getByRole('combobox', {
+      name: 'Search back',
+    });
+    await user.selectOptions(historySelect, '18');
+    await user.click(screen.getByRole('button', { name: 'Search' }));
+
+    await waitFor(() => {
+      expect(
+        wcaRequestUrls.some(
+          (url) => new URL(url).searchParams.get('start') === '2025-02-24',
+        ),
+      ).toBe(true);
+    });
+
+    const requestCountAfter18Months = wcaRequestUrls.length;
+    await user.selectOptions(historySelect, '24');
+    await user.click(screen.getByRole('button', { name: 'Search' }));
+
+    await waitFor(() => {
+      expect(
+        wcaRequestUrls.some(
+          (url) => new URL(url).searchParams.get('start') === '2024-08-24',
+        ),
+      ).toBe(true);
+    });
+    expect(screen.getByText('Old History Open 2024')).toBeInTheDocument();
+    expect(wcaRequestUrls.length).toBeGreaterThan(requestCountAfter18Months);
   });
 
   it('identifies country and state when searching with coordinates', async () => {

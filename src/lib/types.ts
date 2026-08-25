@@ -40,7 +40,7 @@ export interface WcaUser {
 export interface EventSummary {
   id: string;
   label: string;
-  lastHeldDate: string;
+  lastHeldDate: string | null;
   lastCompetitionName: string;
   lastCompetitionUrl: string | null;
   lastDistanceMiles: number;
@@ -52,7 +52,7 @@ export interface EventGroup {
   competitionId: string;
   competitionName: string;
   competitionUrl: string | null;
-  lastHeldDate: string;
+  lastHeldDate: string | null;
   lastDistanceMiles: number;
   events: EventSummary[];
 }

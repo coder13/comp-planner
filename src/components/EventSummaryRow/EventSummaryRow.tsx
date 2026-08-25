@@ -86,7 +86,11 @@ export function EventSummaryRow({
 
       {showCompetition && (
         <div className="min-w-0">
-          {event.lastCompetitionUrl ? (
+          {!event.lastCompetitionName ? (
+            <p className="text-xs font-medium text-ink/55">
+              No nearby competition
+            </p>
+          ) : event.lastCompetitionUrl ? (
             <a
               className="focus-ring inline-flex max-w-full items-center gap-1 text-xs font-semibold text-ink transition hover:text-coral-dark"
               href={event.lastCompetitionUrl}
@@ -101,10 +105,14 @@ export function EventSummaryRow({
             </p>
           )}
           <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink/45">
-            <span className="inline-flex items-center gap-1.5">
-              <CalendarIcon className="size-3.5" />
-              {formatCompetitionDate(event.lastHeldDate)}
-            </span>
+            {event.lastHeldDate ? (
+              <span className="inline-flex items-center gap-1.5">
+                <CalendarIcon className="size-3.5" />
+                {formatCompetitionDate(event.lastHeldDate)}
+              </span>
+            ) : (
+              <span>No match in search history</span>
+            )}
           </div>
         </div>
       )}

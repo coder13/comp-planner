@@ -75,18 +75,37 @@ describe('getEventSummaries', () => {
     );
 
     expect(results.competitionCount).toBe(4);
-    expect(results.events.map((event) => event.id)).toEqual(['222', '333']);
-    expect(results.events[0].heldInLast12Months).toBe(1);
-    expect(results.events[1].heldInLast12Months).toBe(2);
-    expect(results.events[0].lastCompetitionName).toBe('July Open 2026');
-    expect(results.events[1].lastCompetitionName).toBe('Local Open 2026');
-    expect(results.eventGroups.map((group) => group.competitionName)).toEqual([
-      'July Open 2026',
-      'Local Open 2026',
-    ]);
-    expect(results.eventGroups[1].events.map((event) => event.id)).toEqual([
-      '333',
-    ]);
+    expect(results.events.map((event) => event.id)).toContain('222');
+    expect(results.events.map((event) => event.id)).toContain('333');
+    expect(results.events.map((event) => event.id)).toContain('333ft');
+    expect(results.events.find((event) => event.id === '333ft')).toEqual(
+      expect.objectContaining({
+        heldInLast12Months: 0,
+        lastHeldDate: null,
+        totalCompetitionCount: 0,
+      }),
+    );
+    const twoByTwo = results.events.find((event) => event.id === '222');
+    const threeByThree = results.events.find((event) => event.id === '333');
+    expect(twoByTwo?.heldInLast12Months).toBe(1);
+    expect(threeByThree?.heldInLast12Months).toBe(2);
+    expect(twoByTwo?.lastCompetitionName).toBe('July Open 2026');
+    expect(threeByThree?.lastCompetitionName).toBe('Local Open 2026');
+    expect(
+      results.eventGroups
+        .filter((group) => group.lastHeldDate)
+        .map((group) => group.competitionName),
+    ).toEqual(['July Open 2026', 'Local Open 2026']);
+    expect(
+      results.eventGroups
+        .find((group) => group.competitionName === 'Local Open 2026')
+        ?.events.map((event) => event.id),
+    ).toEqual(['333']);
+    expect(
+      results.eventGroups.find(
+        (group) => group.competitionName === 'No nearby competition',
+      )?.events,
+    ).toHaveLength(16);
     expect(results.upcomingCompetitions.map((upcoming) => upcoming.id)).toEqual(
       ['SeattleFallOpen2026'],
     );
@@ -149,11 +168,15 @@ describe('getEventSummaries', () => {
       },
     );
 
-    expect(stateResults.events.map((event) => event.id)).toEqual(['333']);
-    expect(regionResults.events.map((event) => event.id)).toEqual([
-      '222',
-      '333',
-    ]);
+    expect(
+      stateResults.events.find((event) => event.id === '333'),
+    ).toBeDefined();
+    expect(
+      stateResults.events.filter((event) => event.totalCompetitionCount > 0),
+    ).toEqual([expect.objectContaining({ id: '333' })]);
+    expect(
+      regionResults.events.filter((event) => event.totalCompetitionCount > 0),
+    ).toEqual(['222', '333'].map((id) => expect.objectContaining({ id })));
   });
 });
 

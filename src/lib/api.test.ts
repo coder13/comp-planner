@@ -1,4 +1,5 @@
 import {
+  fetchCompetitions,
   fetchMyCompetitions,
   geocodeCities,
   parseCoordinates,
@@ -118,6 +119,33 @@ describe('fetchMyCompetitions', () => {
           Authorization: 'Bearer test-token',
         }),
       }),
+    );
+  });
+});
+
+describe('fetchCompetitions', () => {
+  const originalFetch = globalThis.fetch;
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it('sets the page size used by its pagination loop', async () => {
+    globalThis.fetch = jest.fn().mockResolvedValue({
+      json: async () => [],
+      ok: true,
+      status: 200,
+    }) as typeof fetch;
+
+    await fetchCompetitions({
+      countryCode: 'US',
+      endDate: '2026-08-24',
+      startDate: '2025-08-24',
+    });
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('per_page=25'),
+      expect.anything(),
     );
   });
 });

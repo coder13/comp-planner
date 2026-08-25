@@ -37,4 +37,27 @@ describe('EventSummaryRow', () => {
     ).toBeInTheDocument();
     expect(screen.queryByText('8.4 mi away')).not.toBeInTheDocument();
   });
+
+  it('shows events with no nearby history', () => {
+    render(
+      <EventSummaryRow
+        asOfDate="2026-08-24"
+        event={{
+          id: '333ft',
+          label: '3×3 With Feet',
+          lastHeldDate: null,
+          lastCompetitionName: '',
+          lastCompetitionUrl: null,
+          lastDistanceMiles: 0,
+          heldInLast12Months: 0,
+          totalCompetitionCount: 0,
+        }}
+      />,
+    );
+
+    expect(screen.getByText('3×3 With Feet')).toBeInTheDocument();
+    expect(screen.getByText('No nearby competition')).toBeInTheDocument();
+    expect(screen.getByText('No match in search history')).toBeInTheDocument();
+    expect(screen.getByText('Never held')).toBeInTheDocument();
+  });
 });

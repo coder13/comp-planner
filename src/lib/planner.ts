@@ -341,10 +341,25 @@ export const getEventSummaries = (
       lastCompetitionId: string;
       lastCompetitionName: string;
       lastCompetitionUrl: string | null;
-      lastHeldDate: string;
+      lastHeldDate: string | null;
       lastDistanceMiles: number;
     }
   >();
+
+  Object.entries(EVENT_LABELS).forEach(([eventId, label]) => {
+    events.set(eventId, {
+      id: eventId,
+      label,
+      heldInLast12Months: 0,
+      totalCompetitionCount: 0,
+      lastCompetitionId: '',
+      lastCompetitionName: '',
+      lastCompetitionUrl: null,
+      lastHeldDate: null,
+      lastDistanceMiles: 0,
+    });
+  });
+
   heldCompetitions.forEach(({ competition, distanceMiles }) => {
     competition.event_ids.forEach((eventId) => {
       const current = events.get(eventId);
@@ -379,7 +394,8 @@ export const getEventSummaries = (
 
   const eventGroups = new Map<string, EventGroup>();
   events.forEach((event) => {
-    const currentGroup = eventGroups.get(event.lastCompetitionId);
+    const groupId = event.lastCompetitionId || 'no-nearby-competition';
+    const currentGroup = eventGroups.get(groupId);
     const eventSummary: EventSummary = {
       id: event.id,
       label: event.label,
@@ -396,9 +412,9 @@ export const getEventSummaries = (
       return;
     }
 
-    eventGroups.set(event.lastCompetitionId, {
-      competitionId: event.lastCompetitionId,
-      competitionName: event.lastCompetitionName,
+    eventGroups.set(groupId, {
+      competitionId: groupId,
+      competitionName: event.lastCompetitionName || 'No nearby competition',
       competitionUrl: event.lastCompetitionUrl,
       lastHeldDate: event.lastHeldDate,
       lastDistanceMiles: event.lastDistanceMiles,
@@ -415,8 +431,7 @@ export const getEventSummaries = (
     }))
     .sort((first, second) => {
       return (
-        toDate(first.lastHeldDate).getTime() -
-          toDate(second.lastHeldDate).getTime() ||
+        compareHeldDates(first.lastHeldDate, second.lastHeldDate) ||
         first.competitionName.localeCompare(second.competitionName)
       );
     });
@@ -469,8 +484,7 @@ export const getEventSummaries = (
       )
       .sort((first, second) => {
         return (
-          toDate(first.lastHeldDate).getTime() -
-            toDate(second.lastHeldDate).getTime() ||
+          compareHeldDates(first.lastHeldDate, second.lastHeldDate) ||
           first.label.localeCompare(second.label)
         );
       }),
@@ -496,7 +510,30 @@ export const formatDistanceMiles = (distanceMiles: number | null) =>
     ? '—'
     : `${distanceMiles < 10 ? distanceMiles.toFixed(1) : Math.round(distanceMiles)} mi`;
 
-export const formatRelativeAge = (heldDate: string, asOfDate: string) => {
+const compareHeldDates = (first: string | null, second: string | null) => {
+  if (!first && !second) {
+    return 0;
+  }
+
+  if (!first) {
+    return -1;
+  }
+
+  if (!second) {
+    return 1;
+  }
+
+  return toDate(first).getTime() - toDate(second).getTime();
+};
+
+export const formatRelativeAge = (
+  heldDate: string | null,
+  asOfDate: string,
+) => {
+  if (!heldDate) {
+    return 'Never held';
+  }
+
   const elapsedDays = Math.max(
     0,
     Math.floor(

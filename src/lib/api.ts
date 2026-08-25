@@ -342,6 +342,7 @@ const fetchCompetitionsFromApi = async ({
     const params = new URLSearchParams({
       end: endDate,
       page: String(page),
+      per_page: String(COMPETITIONS_PER_PAGE),
       start: startDate,
     });
 
