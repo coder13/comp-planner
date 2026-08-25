@@ -1,4 +1,8 @@
-import { formatCompetitionDate, formatRelativeAge } from '../../lib/planner';
+import {
+  formatCompetitionDate,
+  formatRelativeAge,
+  getMedianValue,
+} from '../../lib/planner';
 import { EventGroup } from '../../lib/types';
 import { EventSummaryRow } from '../EventSummaryRow';
 import { ArrowUpRightIcon, CalendarIcon } from '../Icons';
@@ -7,6 +11,7 @@ interface CompetitionEventGroupProps {
   asOfDate: string;
   group: EventGroup;
   maxHeldInLast12Months?: number;
+  medianHeldInLast12Months?: number;
 }
 
 export function CompetitionEventGroup({
@@ -15,6 +20,9 @@ export function CompetitionEventGroup({
   maxHeldInLast12Months = Math.max(
     0,
     ...group.events.map((event) => event.heldInLast12Months),
+  ),
+  medianHeldInLast12Months = getMedianValue(
+    group.events.map((event) => event.heldInLast12Months),
   ),
 }: CompetitionEventGroupProps) {
   return (
@@ -52,6 +60,7 @@ export function CompetitionEventGroup({
             event={event}
             key={event.id}
             maxHeldInLast12Months={maxHeldInLast12Months}
+            medianHeldInLast12Months={medianHeldInLast12Months}
             showCompetition={false}
           />
         ))}

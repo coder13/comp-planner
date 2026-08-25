@@ -16,13 +16,15 @@ describe('EventSummaryRow', () => {
           heldInLast12Months: 7,
           totalCompetitionCount: 9,
         }}
+        maxHeldInLast12Months={10}
+        medianHeldInLast12Months={7}
       />,
     );
 
     expect(screen.getByText('3×3×3 Cube')).toBeInTheDocument();
     expect(screen.getByText('7')).toBeInTheDocument();
     expect(screen.getByText('3×3×3 Cube').closest('article')).toHaveStyle(
-      'background-color: rgba(87, 187, 138, 0.5)',
+      'background-color: rgba(255, 255, 255, 0.5)',
     );
     expect(
       screen.queryByText('Held 7 times in the last year'),

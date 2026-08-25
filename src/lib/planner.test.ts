@@ -1,5 +1,6 @@
 import {
   getEventSummaries,
+  getMedianValue,
   getSearchCountryCodes,
   getSearchDateRange,
 } from './planner';
@@ -23,6 +24,11 @@ const competition = (overrides: Partial<WcaCompetition>): WcaCompetition => ({
 });
 
 describe('getEventSummaries', () => {
+  it('calculates odd and even medians', () => {
+    expect(getMedianValue([1, 9, 4])).toBe(4);
+    expect(getMedianValue([1, 9, 4, 8])).toBe(6);
+  });
+
   it('sorts events by last held date and counts the previous 12 months', () => {
     const results = getEventSummaries(
       [

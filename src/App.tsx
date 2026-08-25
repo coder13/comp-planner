@@ -22,6 +22,7 @@ import {
   getEventSummaries,
   getSearchCountryCodes,
   getSearchDateRange,
+  getMedianValue,
   getRegionForState,
   getSearchScopeLabel,
   DEFAULT_LOOKBACK_MONTHS,
@@ -649,6 +650,11 @@ function App() {
         0,
       )
     : 0;
+  const medianHeldInLast12Months = summaryResults
+    ? getMedianValue(
+        summaryResults.events.map((event) => event.heldInLast12Months),
+      )
+    : 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -797,8 +803,8 @@ function App() {
           <div className="mt-3 flex items-center gap-3 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 shadow-sm">
             <span className="size-4 animate-spin rounded-full border-2 border-gray-200 border-t-blue-600" />
             {isFindingLocation
-              ? 'Looking up the selected map location…'
-              : 'Loading competitions from the WCA data set…'}
+              ? 'Looking up the selected map location...'
+              : 'Loading competitions...'}
           </div>
         )}
 
@@ -890,6 +896,7 @@ function App() {
                       event={event}
                       key={event.id}
                       maxHeldInLast12Months={maxHeldInLast12Months}
+                      medianHeldInLast12Months={medianHeldInLast12Months}
                     />
                   ))
                 ) : (
@@ -899,6 +906,7 @@ function App() {
                       group={group}
                       key={group.competitionId}
                       maxHeldInLast12Months={maxHeldInLast12Months}
+                      medianHeldInLast12Months={medianHeldInLast12Months}
                     />
                   ))
                 )

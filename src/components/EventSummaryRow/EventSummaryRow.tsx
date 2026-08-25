@@ -6,6 +6,7 @@ interface EventSummaryRowProps {
   event: EventSummary;
   asOfDate: string;
   maxHeldInLast12Months?: number;
+  medianHeldInLast12Months?: number;
   showCompetition?: boolean;
 }
 
@@ -25,18 +26,26 @@ const interpolateColor = (
 const getHeldCountBackground = (
   heldInLast12Months: number,
   maxHeldInLast12Months: number,
+  medianHeldInLast12Months: number,
 ) => {
-  const ratio =
-    maxHeldInLast12Months > 0
-      ? Math.min(heldInLast12Months / maxHeldInLast12Months, 1)
-      : 0;
+  if (medianHeldInLast12Months <= 0) {
+    return `rgba(${MIDPOINT_COLOR.join(', ')}, 0.5)`;
+  }
+
   const color =
-    ratio <= 0.5
-      ? interpolateColor(UNDER_HELD_COLOR, MIDPOINT_COLOR, ratio * 2)
+    heldInLast12Months <= medianHeldInLast12Months
+      ? interpolateColor(
+          UNDER_HELD_COLOR,
+          MIDPOINT_COLOR,
+          heldInLast12Months / medianHeldInLast12Months,
+        )
       : interpolateColor(
           MIDPOINT_COLOR,
           OVER_SATURATED_COLOR,
-          (ratio - 0.5) * 2,
+          maxHeldInLast12Months > medianHeldInLast12Months
+            ? (heldInLast12Months - medianHeldInLast12Months) /
+                (maxHeldInLast12Months - medianHeldInLast12Months)
+            : 1,
         );
 
   return `rgba(${color.join(', ')}, 0.5)`;
@@ -46,6 +55,7 @@ export function EventSummaryRow({
   asOfDate,
   event,
   maxHeldInLast12Months = event.heldInLast12Months,
+  medianHeldInLast12Months = maxHeldInLast12Months / 2,
   showCompetition = true,
 }: EventSummaryRowProps) {
   return (
@@ -59,6 +69,7 @@ export function EventSummaryRow({
         backgroundColor: getHeldCountBackground(
           event.heldInLast12Months,
           maxHeldInLast12Months,
+          medianHeldInLast12Months,
         ),
       }}>
       <div className="flex min-w-0 items-center gap-3">
