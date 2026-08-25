@@ -5,6 +5,7 @@ const EXPIRATION_KEY = 'comp-planner:wca-access-token-expires-at';
 const STATE_KEY = 'comp-planner:wca-oauth-state';
 
 export const isWcaAuthConfigured = Boolean(WCA_OAUTH_CLIENT_ID);
+export const WCA_CALLBACK_PATH = '/callback';
 
 const createState = () => {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -14,7 +15,8 @@ const createState = () => {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 };
 
-export const getWcaRedirectUri = () => window.location.origin;
+export const getWcaRedirectUri = () =>
+  `${window.location.origin}${WCA_CALLBACK_PATH}`;
 
 export const createWcaLoginUrl = () => {
   if (!WCA_OAUTH_CLIENT_ID) {
@@ -61,6 +63,13 @@ export const getWcaAccessToken = () => {
 };
 
 export const consumeWcaCallback = () => {
+  const queryParams = new URLSearchParams(window.location.search);
+  if (queryParams.has('code')) {
+    throw new Error(
+      'WCA returned an authorization code. Configure the WCA application to use the browser token flow.',
+    );
+  }
+
   const hash = window.location.hash.replace(/^#/, '');
   if (!hash) {
     return null;
@@ -82,11 +91,7 @@ export const consumeWcaCallback = () => {
   const expiresIn = Number(params.get('expires_in') ?? 0);
   const expiresAt = Date.now() + Math.max(expiresIn, 1) * 1000;
   saveWcaAccessToken(accessToken, expiresAt);
-  window.history.replaceState(
-    null,
-    '',
-    `${window.location.pathname}${window.location.search}`,
-  );
+  window.history.replaceState(null, '', '/');
 
   return accessToken;
 };

@@ -1,0 +1,8 @@
+[build]
+  command = "yarn build"
+  publish = "dist"
+
+[[redirects]]
+  from = "/callback"
+  to = "/index.html"
+  status = 200

@@ -56,3 +56,8 @@ For production, set these build variables:
 - `VITE_WCA_API_ORIGIN`
 - `VITE_WCA_OAUTH_ORIGIN`
 - `VITE_WCA_CLIENT_ID`
+
+Set the WCA OAuth callback URL to `https://comp-planner.netlify.app/callback`.
+The app uses the browser token flow, so the WCA login request must return a
+token in the URL hash. A code flow needs a server secret and does not work in
+this Vite client.

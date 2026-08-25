@@ -20,7 +20,9 @@ describe('wcaAuth', () => {
     expect(url.pathname).toBe('/oauth/authorize');
     expect(url.searchParams.get('client_id')).toBe('example-application-id');
     expect(url.searchParams.get('response_type')).toBe('token');
-    expect(url.searchParams.get('redirect_uri')).toBe('http://localhost');
+    expect(url.searchParams.get('redirect_uri')).toBe(
+      'http://localhost/callback',
+    );
     expect(url.searchParams.get('state')).toBeTruthy();
   });
 
@@ -34,10 +36,20 @@ describe('wcaAuth', () => {
 
   it('consumes the OAuth callback and removes the hash', () => {
     const loginUrl = new URL(createWcaLoginUrl());
+    window.history.replaceState(null, '', '/callback');
     window.location.hash = `#access_token=callback-token&expires_in=3600&state=${loginUrl.searchParams.get('state')}`;
 
     expect(consumeWcaCallback()).toBe('callback-token');
     expect(window.location.hash).toBe('');
+    expect(window.location.pathname).toBe('/');
     expect(getWcaAccessToken()).toBe('callback-token');
+  });
+
+  it('rejects authorization-code callbacks in the browser', () => {
+    window.history.replaceState(null, '', '/callback?code=one-time-code');
+
+    expect(() => consumeWcaCallback()).toThrow(
+      'Configure the WCA application to use the browser token flow.',
+    );
   });
 });
