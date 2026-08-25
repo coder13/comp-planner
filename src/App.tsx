@@ -719,6 +719,8 @@ function App() {
             </div>
 
             <SearchScopeControl
+              clipToCountry={sameCountryOnly}
+              countryCode={selectedCity?.countryCode}
               latitude={selectedCity?.latitude}
               mode={scopeMode}
               longitude={selectedCity?.longitude}

@@ -3,6 +3,8 @@ import { SearchRegion, SearchScopeMode } from '../../lib/planner';
 import { SearchAreaMap } from '../SearchAreaMap';
 
 interface SearchScopeControlProps {
+  clipToCountry: boolean;
+  countryCode?: string;
   mode: SearchScopeMode;
   latitude?: number;
   longitude?: number;
@@ -20,6 +22,8 @@ const MIN_RADIUS_MILES = 1;
 const MAX_RADIUS_MILES = 1000;
 
 export function SearchScopeControl({
+  clipToCountry,
+  countryCode,
   mode,
   latitude,
   longitude,
@@ -124,6 +128,8 @@ export function SearchScopeControl({
           </div>
           {latitude !== undefined && longitude !== undefined && (
             <SearchAreaMap
+              clipToCountry={clipToCountry}
+              countryCode={countryCode}
               latitude={latitude}
               longitude={longitude}
               onLocationSelect={onLocationSelect}

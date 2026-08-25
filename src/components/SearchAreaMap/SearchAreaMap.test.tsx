@@ -96,4 +96,48 @@ describe('SearchAreaMap', () => {
 
     expect(onLocationSelect).toHaveBeenCalledWith(48.1, -123.1);
   });
+
+  it('clips the radius to the selected country boundary', async () => {
+    globalThis.fetch = jest.fn().mockResolvedValue({
+      json: async () => ({
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            geometry: {
+              type: 'Polygon',
+              coordinates: [
+                [
+                  [-123, 47],
+                  [-121, 47],
+                  [-121, 48],
+                  [-123, 48],
+                  [-123, 47],
+                ],
+              ],
+            },
+            properties: {},
+          },
+        ],
+      }),
+      ok: true,
+    }) as typeof fetch;
+
+    render(
+      <SearchAreaMap
+        clipToCountry={true}
+        countryCode="US"
+        latitude={47.6}
+        longitude={-122.3}
+        radiusMiles={50}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(Leaflet.geoJSON).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'Feature' }),
+        expect.objectContaining({ style: expect.any(Object) }),
+      );
+    });
+  });
 });

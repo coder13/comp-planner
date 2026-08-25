@@ -7,6 +7,8 @@ describe('SearchScopeControl', () => {
 
     render(
       <SearchScopeControl
+        clipToCountry={true}
+        countryCode="US"
         mode="radius"
         radiusMiles="50"
         region={null}
@@ -27,6 +29,8 @@ describe('SearchScopeControl', () => {
   it('shows state and region scope choices for a PNW city', () => {
     render(
       <SearchScopeControl
+        clipToCountry={true}
+        countryCode="US"
         mode="radius"
         radiusMiles="50"
         region={{
@@ -54,6 +58,8 @@ describe('SearchScopeControl', () => {
 
     render(
       <SearchScopeControl
+        clipToCountry={true}
+        countryCode="US"
         mode="radius"
         radiusMiles="50"
         region={null}

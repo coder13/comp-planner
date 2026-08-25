@@ -6,6 +6,8 @@ const meta = {
   title: 'Components/SearchAreaMap',
   component: SearchAreaMap,
   args: {
+    clipToCountry: true,
+    countryCode: 'US',
     latitude: 47.6062,
     longitude: -122.3321,
     onLocationSelect: fn(),
