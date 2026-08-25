@@ -39,7 +39,7 @@ const getHeldCountBackground = (
           (ratio - 0.5) * 2,
         );
 
-  return `rgb(${color.join(', ')})`;
+  return `rgba(${color.join(', ')}, 0.5)`;
 };
 
 export function EventSummaryRow({
