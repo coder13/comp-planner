@@ -1,4 +1,4 @@
-import { fetchMyCompetitions, geocodeCities } from './api';
+import { fetchMyCompetitions, geocodeCities, searchCompetitions } from './api';
 
 const photonFeature = (city: string, longitude: number, latitude: number) => ({
   geometry: { coordinates: [longitude, latitude] as [number, number] },
@@ -95,6 +95,48 @@ describe('fetchMyCompetitions', () => {
       expect.objectContaining({
         headers: expect.objectContaining({
           Authorization: 'Bearer test-token',
+        }),
+      }),
+    );
+  });
+});
+
+describe('searchCompetitions', () => {
+  const originalFetch = globalThis.fetch;
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it('loads and caches public competition search results', async () => {
+    globalThis.fetch = jest.fn().mockResolvedValue({
+      json: async () => [
+        {
+          id: 'SeattleSummerOpen2026',
+          name: 'Seattle Summer Open 2026',
+          start_date: '2026-08-01',
+          end_date: '2026-08-01',
+          city: 'Seattle, Washington',
+          country_iso2: 'US',
+          event_ids: ['333'],
+        },
+      ],
+      ok: true,
+    }) as typeof fetch;
+
+    const firstResponse = await searchCompetitions('Seattle public cache test');
+    const secondResponse = await searchCompetitions(
+      '  Seattle public cache test  ',
+    );
+
+    expect(firstResponse[0].name).toBe('Seattle Summer Open 2026');
+    expect(secondResponse).toEqual(firstResponse);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/competitions?q=Seattle+public+cache+test'),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Accept: 'application/json',
         }),
       }),
     );

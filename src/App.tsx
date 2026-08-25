@@ -3,6 +3,7 @@ import { CityPicker } from './components/CityPicker';
 import { CompetitionEventGroup } from './components/CompetitionEventGroup';
 import { EventSummaryRow } from './components/EventSummaryRow';
 import { CompetitionPlan } from './components/CompetitionPlan';
+import { CompetitionSearch } from './components/CompetitionSearch';
 import { SearchScopeControl } from './components/SearchScopeControl';
 import { UpcomingCompetitionList } from './components/UpcomingCompetitionList';
 import { UpcomingCompetitionToggle } from './components/UpcomingCompetitionToggle';
@@ -12,6 +13,7 @@ import {
   fetchCompetitions,
   fetchMyCompetitions,
   geocodeCities,
+  searchCompetitions,
 } from './lib/api';
 import {
   formatCompetitionDate,
@@ -63,6 +65,10 @@ const getScopeForCity = (
 
 function App() {
   const [query, setQuery] = useState(DEFAULT_CITY_QUERY);
+  const [competitionQuery, setCompetitionQuery] = useState('');
+  const [competitionOptions, setCompetitionOptions] = useState<
+    WcaCompetition[]
+  >([]);
   const [asOfDate, setAsOfDate] = useState(DEFAULT_DATE);
   const [includeUpcoming, setIncludeUpcoming] = useState(false);
   const [radiusMiles, setRadiusMiles] = useState(String(DEFAULT_RADIUS_MILES));
@@ -78,6 +84,7 @@ function App() {
   });
   const [viewMode, setViewMode] = useState<ViewMode>('event');
   const [isFindingCity, setIsFindingCity] = useState(false);
+  const [isFindingCompetition, setIsFindingCompetition] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [wcaUser, setWcaUser] = useState<WcaUser | null>(null);
   const [wcaCompetitions, setWcaCompetitions] = useState<WcaCompetition[]>([]);
@@ -88,6 +95,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const controllerRef = useRef<AbortController | null>(null);
   const cityLookupControllerRef = useRef<AbortController | null>(null);
+  const competitionLookupControllerRef = useRef<AbortController | null>(null);
   const wcaControllerRef = useRef<AbortController | null>(null);
 
   const loadResults = useCallback(
@@ -198,6 +206,7 @@ function App() {
     return () => {
       isActive = false;
       cityController.abort();
+      competitionLookupControllerRef.current?.abort();
       controllerRef.current?.abort();
     };
   }, [loadResults]);
@@ -273,6 +282,8 @@ function App() {
   const handleCityQueryChange = (nextQuery: string) => {
     setQuery(nextQuery);
     setCityOptions([]);
+    setCompetitionQuery('');
+    setCompetitionOptions([]);
     setError(null);
 
     if (
@@ -285,6 +296,21 @@ function App() {
       setSelectedWcaCompetition(null);
       setSummaryResults(null);
       setIsLoading(false);
+    }
+  };
+
+  const handleCompetitionQueryChange = (nextQuery: string) => {
+    setCompetitionQuery(nextQuery);
+    setCompetitionOptions([]);
+    setError(null);
+
+    if (
+      selectedWcaCompetition &&
+      nextQuery.trim() !== selectedWcaCompetition.name
+    ) {
+      competitionLookupControllerRef.current?.abort();
+      setSelectedWcaCompetition(null);
+      setSummaryResults(null);
     }
   };
 
@@ -339,10 +365,62 @@ function App() {
     void lookupCities(query);
   };
 
+  const lookupCompetitions = async (
+    nextQuery: string,
+    showEmptyError = false,
+  ) => {
+    const trimmedQuery = nextQuery.trim();
+
+    if (!trimmedQuery) {
+      setCompetitionOptions([]);
+      return;
+    }
+
+    competitionLookupControllerRef.current?.abort();
+    const competitionController = new AbortController();
+    competitionLookupControllerRef.current = competitionController;
+    setIsFindingCompetition(true);
+
+    try {
+      const competitions = await searchCompetitions(
+        trimmedQuery,
+        competitionController.signal,
+      );
+
+      if (!competitionController.signal.aborted) {
+        setCompetitionOptions(competitions);
+        if (showEmptyError && competitions.length === 0) {
+          setError('No competition matched that search. Try a different name.');
+        }
+      }
+    } catch (caughtError) {
+      if (
+        caughtError instanceof DOMException &&
+        caughtError.name === 'AbortError'
+      ) {
+        return;
+      }
+
+      setError('The competition search could not load. Try again.');
+    } finally {
+      if (!competitionController.signal.aborted) {
+        setIsFindingCompetition(false);
+      }
+    }
+  };
+
+  const handleCompetitionLookup = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void lookupCompetitions(competitionQuery, true);
+  };
+
   const handleCitySelect = (city: CityLocation) => {
     cityLookupControllerRef.current?.abort();
+    competitionLookupControllerRef.current?.abort();
     controllerRef.current?.abort();
     setQuery(city.cityName);
+    setCompetitionQuery('');
+    setCompetitionOptions([]);
     setSelectedWcaCompetition(null);
     setSelectedCity(city);
     setCityOptions([]);
@@ -369,19 +447,17 @@ function App() {
     clearWcaAccessToken();
     setWcaUser(null);
     setWcaCompetitions([]);
+    setCompetitionQuery('');
+    setCompetitionOptions([]);
     setSelectedWcaCompetition(null);
     setWcaAuthError(null);
   };
 
-  const handleWcaCompetitionSelect = (competitionId: string) => {
-    const competition = wcaCompetitions.find(
-      (candidate) => candidate.id === competitionId,
-    );
-    setSelectedWcaCompetition(competition ?? null);
-
-    if (!competition) {
-      return;
-    }
+  const handleCompetitionSelect = (competition: WcaCompetition) => {
+    competitionLookupControllerRef.current?.abort();
+    setCompetitionQuery(competition.name);
+    setCompetitionOptions([]);
+    setSelectedWcaCompetition(competition);
 
     if (
       competition.latitude_degrees === null ||
@@ -419,6 +495,16 @@ function App() {
       },
       includeUpcoming,
     );
+  };
+
+  const handleWcaCompetitionSelect = (competitionId: string) => {
+    const competition = wcaCompetitions.find(
+      (candidate) => candidate.id === competitionId,
+    );
+
+    if (competition) {
+      handleCompetitionSelect(competition);
+    }
   };
 
   const handleSearch = () => {
@@ -493,12 +579,22 @@ function App() {
               query={query}
             />
 
-            {wcaUser && (
+            {wcaUser ? (
               <WcaCompetitionPicker
                 competitions={wcaCompetitions}
                 isLoading={isWcaLoading}
                 selectedCompetitionId={selectedWcaCompetition?.id ?? null}
                 onSelect={handleWcaCompetitionSelect}
+              />
+            ) : (
+              <CompetitionSearch
+                competitions={competitionOptions}
+                isBusy={isFindingCompetition}
+                onLookup={(nextQuery) => void lookupCompetitions(nextQuery)}
+                onQueryChange={handleCompetitionQueryChange}
+                onSelectCompetition={handleCompetitionSelect}
+                onSubmit={handleCompetitionLookup}
+                query={competitionQuery}
               />
             )}
           </div>

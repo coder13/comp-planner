@@ -35,7 +35,7 @@ describe('WcaCompetitionPicker', () => {
     );
 
     await user.selectOptions(
-      screen.getByLabelText('My competitions'),
+      screen.getByLabelText('My upcoming competitions'),
       'SeattleSummerOpen2026',
     );
     expect(onSelect).toHaveBeenCalledWith('SeattleSummerOpen2026');
@@ -51,6 +51,6 @@ describe('WcaCompetitionPicker', () => {
       />,
     );
 
-    expect(screen.getByLabelText('My competitions')).toBeDisabled();
+    expect(screen.getByLabelText('My upcoming competitions')).toBeDisabled();
   });
 });

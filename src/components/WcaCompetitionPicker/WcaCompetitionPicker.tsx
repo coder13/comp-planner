@@ -18,7 +18,7 @@ export function WcaCompetitionPicker({
     <label
       className="block text-sm font-medium text-gray-700"
       htmlFor="wca-competition">
-      My competitions
+      My upcoming competitions
       <select
         id="wca-competition"
         className="focus-ring mt-1 h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"

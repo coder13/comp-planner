@@ -6,6 +6,8 @@ const COMPETITION_PAGE_BATCH_SIZE = 5;
 const MAX_COMPETITION_PAGES = 60;
 export const WCA_COMPETITION_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const COMPETITION_CACHE_STORAGE_PREFIX = 'comp-planner:wca-competitions:v1:';
+const COMPETITION_SEARCH_CACHE_STORAGE_PREFIX =
+  'comp-planner:wca-competition-search:v1:';
 
 interface CompetitionCacheEntry {
   competitions: WcaCompetition[];
@@ -14,6 +16,8 @@ interface CompetitionCacheEntry {
 
 const competitionMemoryCache = new Map<string, WcaCompetition[]>();
 const competitionInFlight = new Map<string, Promise<WcaCompetition[]>>();
+const competitionSearchMemoryCache = new Map<string, WcaCompetition[]>();
+const competitionSearchInFlight = new Map<string, Promise<WcaCompetition[]>>();
 
 interface PhotonResult {
   geometry: {
@@ -338,6 +342,102 @@ export const fetchCompetitions = async ({
     });
 
   competitionInFlight.set(cacheKey, request);
+  return withAbort(request, signal);
+};
+
+const getCompetitionSearchCacheKey = (query: string) =>
+  query.trim().toLocaleLowerCase();
+
+const getStoredCompetitionSearch = (cacheKey: string) => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    const rawEntry = window.localStorage.getItem(
+      `${COMPETITION_SEARCH_CACHE_STORAGE_PREFIX}${encodeURIComponent(cacheKey)}`,
+    );
+    if (!rawEntry) {
+      return null;
+    }
+
+    const entry = JSON.parse(rawEntry) as CompetitionCacheEntry;
+    if (entry.expiresAt <= Date.now()) {
+      window.localStorage.removeItem(
+        `${COMPETITION_SEARCH_CACHE_STORAGE_PREFIX}${encodeURIComponent(cacheKey)}`,
+      );
+      return null;
+    }
+
+    return entry.competitions;
+  } catch {
+    return null;
+  }
+};
+
+const storeCompetitionSearch = (
+  cacheKey: string,
+  competitions: WcaCompetition[],
+) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    const entry: CompetitionCacheEntry = {
+      competitions,
+      expiresAt: Date.now() + WCA_COMPETITION_CACHE_TTL_MS,
+    };
+    window.localStorage.setItem(
+      `${COMPETITION_SEARCH_CACHE_STORAGE_PREFIX}${encodeURIComponent(cacheKey)}`,
+      JSON.stringify(entry),
+    );
+  } catch {
+    // Caching is an optimization. A full or blocked storage area must not
+    // prevent the live WCA request from succeeding.
+  }
+};
+
+export const searchCompetitions = async (
+  query: string,
+  signal?: AbortSignal,
+) => {
+  const cacheKey = getCompetitionSearchCacheKey(query);
+  if (!cacheKey) {
+    return [];
+  }
+
+  const memoryCached = competitionSearchMemoryCache.get(cacheKey);
+  if (memoryCached) {
+    return withAbort(Promise.resolve(memoryCached), signal);
+  }
+
+  const storedCompetitions = getStoredCompetitionSearch(cacheKey);
+  if (storedCompetitions) {
+    competitionSearchMemoryCache.set(cacheKey, storedCompetitions);
+    return withAbort(Promise.resolve(storedCompetitions), signal);
+  }
+
+  const existingRequest = competitionSearchInFlight.get(cacheKey);
+  if (existingRequest) {
+    return withAbort(existingRequest, signal);
+  }
+
+  const params = new URLSearchParams({ q: query.trim() });
+  const request = requestJson<WcaCompetitionPayload[]>(
+    `${WCA_API_ORIGIN}/competitions?${params.toString()}`,
+  )
+    .then((competitions) => competitions.map(normalizeCompetition))
+    .then((competitions) => {
+      competitionSearchMemoryCache.set(cacheKey, competitions);
+      storeCompetitionSearch(cacheKey, competitions);
+      return competitions;
+    })
+    .finally(() => {
+      competitionSearchInFlight.delete(cacheKey);
+    });
+
+  competitionSearchInFlight.set(cacheKey, request);
   return withAbort(request, signal);
 };
 

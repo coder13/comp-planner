@@ -1,0 +1,1 @@
+export { CompetitionSearch } from './CompetitionSearch';

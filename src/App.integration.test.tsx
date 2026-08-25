@@ -94,7 +94,12 @@ describe('Seattle event search', () => {
         }
 
         wcaRequestCount += 1;
-        const page = new URL(url).searchParams.get('page');
+        const requestUrl = new URL(url);
+        if (requestUrl.searchParams.has('q')) {
+          return responseFor([competition({})]) as Promise<Response>;
+        }
+
+        const page = requestUrl.searchParams.get('page');
         if (page === '1') {
           const competitions = [
             competition({}),
@@ -191,11 +196,13 @@ describe('Seattle event search', () => {
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText('My competitions')).toBeInTheDocument();
+      expect(
+        screen.getByLabelText('My upcoming competitions'),
+      ).toBeInTheDocument();
     });
 
     await user.selectOptions(
-      screen.getByLabelText('My competitions'),
+      screen.getByLabelText('My upcoming competitions'),
       'SeattleSummerOpen2026',
     );
 
@@ -204,6 +211,25 @@ describe('Seattle event search', () => {
     });
     expect(screen.getByText('Events in this competition')).toBeInTheDocument();
     expect(screen.getByText('Suggested events')).toBeInTheDocument();
+  });
+
+  it('searches public competitions while signed out', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const competitionSearch =
+      await screen.findByLabelText('Pick a competition');
+    await user.type(competitionSearch, 'Seattle');
+
+    const competitionOption = await screen.findByRole('option', {
+      name: /Seattle Summer Open 2026/,
+    });
+    await user.click(competitionOption);
+
+    await waitFor(() => {
+      expect(screen.getByText('Competition plan')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Events in this competition')).toBeInTheDocument();
   });
 
   it('shows upcoming competitions when the toggle is enabled', async () => {
