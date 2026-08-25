@@ -1,12 +1,15 @@
 import {
   EventGroup,
+  CompetitionEventInsight,
   EventSummary,
   EventSummaryResults,
+  UpcomingCompetitionSummary,
   WcaCompetition,
 } from './types';
 
 export const LOOKBACK_MONTHS = 24;
 export const RECENT_MONTHS = 12;
+export const UPCOMING_MONTHS = 12;
 export const KILOMETERS_PER_MILE = 1.609344;
 
 export type SearchScopeMode = 'radius' | 'state' | 'region';
@@ -81,6 +84,33 @@ export const EVENT_LABELS: Record<string, string> = {
 export const getEventLabel = (eventId: string) =>
   EVENT_LABELS[eventId] ?? eventId;
 
+export const getCompetitionEventInsights = (
+  eventIds: string[],
+  eventSummaries: EventSummary[],
+) => {
+  const summariesById = new Map(
+    eventSummaries.map((summary) => [summary.id, summary]),
+  );
+  const selectedEventIds = new Set(eventIds);
+  const toInsight = (eventId: string): CompetitionEventInsight => {
+    const summary = summariesById.get(eventId);
+    return {
+      eventId,
+      label: getEventLabel(eventId),
+      lastHeldDate: summary?.lastHeldDate ?? null,
+      heldInLast12Months: summary?.heldInLast12Months ?? 0,
+      totalCompetitionCount: summary?.totalCompetitionCount ?? 0,
+    };
+  };
+
+  return {
+    selected: eventIds.map(toInsight),
+    suggested: eventSummaries
+      .filter((summary) => !selectedEventIds.has(summary.id))
+      .map((summary) => toInsight(summary.id)),
+  };
+};
+
 const toDate = (value: string | Date) =>
   value instanceof Date
     ? new Date(value.getTime())
@@ -94,6 +124,12 @@ const dateMonthsAgo = (date: Date, months: number) => {
   return result;
 };
 
+const dateMonthsFrom = (date: Date, months: number) => {
+  const result = toDate(date);
+  result.setUTCMonth(result.getUTCMonth() + months);
+  return result;
+};
+
 export const getDateString = (date = new Date()) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -101,8 +137,13 @@ export const getDateString = (date = new Date()) => {
   return `${year}-${month}-${day}`;
 };
 
-export const getSearchDateRange = (asOfDate: string) => ({
-  endDate: asOfDate,
+export const getSearchDateRange = (
+  asOfDate: string,
+  includeUpcoming = false,
+) => ({
+  endDate: includeUpcoming
+    ? formatDate(dateMonthsFrom(toDate(asOfDate), UPCOMING_MONTHS))
+    : asOfDate,
   startDate: formatDate(dateMonthsAgo(toDate(asOfDate), LOOKBACK_MONTHS)),
 });
 
@@ -186,7 +227,7 @@ export const getEventSummaries = (
         return false;
       }
 
-      return isHeldByDate(competition, asOf);
+      return true;
     })
     .map((competition) => ({
       competition,
@@ -200,6 +241,12 @@ export const getEventSummaries = (
     .filter(({ competition, distanceMiles }) =>
       competitionMatchesScope(competition, distanceMiles, scope),
     );
+  const heldCompetitions = localCompetitions.filter(({ competition }) =>
+    isHeldByDate(competition, asOf),
+  );
+  const upcomingCompetitions = localCompetitions.filter(
+    ({ competition }) => !isHeldByDate(competition, asOf),
+  );
 
   const events = new Map<
     string,
@@ -211,7 +258,7 @@ export const getEventSummaries = (
       lastDistanceMiles: number;
     }
   >();
-  localCompetitions.forEach(({ competition, distanceMiles }) => {
+  heldCompetitions.forEach(({ competition, distanceMiles }) => {
     competition.event_ids.forEach((eventId) => {
       const current = events.get(eventId);
       const isRecent = toDate(competition.end_date) >= recentStart;
@@ -287,8 +334,29 @@ export const getEventSummaries = (
       );
     });
 
+  const upcomingCompetitionSummaries: UpcomingCompetitionSummary[] = [
+    ...upcomingCompetitions,
+  ]
+    .sort((first, second) => {
+      return (
+        first.competition.start_date.localeCompare(
+          second.competition.start_date,
+        ) || first.competition.name.localeCompare(second.competition.name)
+      );
+    })
+    .map(({ competition, distanceMiles }) => ({
+      id: competition.id,
+      name: competition.name,
+      startDate: competition.start_date,
+      endDate: competition.end_date,
+      city: competition.city,
+      url: competition.url,
+      eventIds: competition.event_ids,
+      distanceMiles,
+    }));
+
   return {
-    competitionCount: localCompetitions.length,
+    competitionCount: heldCompetitions.length,
     eventGroups: sortedEventGroups,
     events: [...events.values()]
       .map(
@@ -319,6 +387,7 @@ export const getEventSummaries = (
           first.label.localeCompare(second.label)
         );
       }),
+    upcomingCompetitions: upcomingCompetitionSummaries,
   };
 };
 

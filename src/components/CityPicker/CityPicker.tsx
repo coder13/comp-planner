@@ -1,9 +1,13 @@
+import { FormEvent, useEffect, useRef } from 'react';
 import { CityLocation } from '../../lib/types';
 import { MapPinIcon, SearchIcon } from '../Icons';
+
+const AUTOCOMPLETE_DEBOUNCE_MS = 320;
 
 interface CityPickerProps {
   cities: CityLocation[];
   isBusy: boolean;
+  onLookup: (query: string) => void;
   onQueryChange: (query: string) => void;
   onSelectCity: (city: CityLocation) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
@@ -13,18 +17,49 @@ interface CityPickerProps {
 export function CityPicker({
   cities,
   isBusy,
+  onLookup,
   onQueryChange,
   onSelectCity,
   onSubmit,
   query,
 }: CityPickerProps) {
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const cancelAutocomplete = () => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+  };
+
+  useEffect(() => cancelAutocomplete, []);
+
+  const handleQueryChange = (nextQuery: string) => {
+    onQueryChange(nextQuery);
+    cancelAutocomplete();
+
+    if (!nextQuery.trim()) {
+      return;
+    }
+
+    debounceRef.current = setTimeout(() => {
+      debounceRef.current = null;
+      onLookup(nextQuery);
+    }, AUTOCOMPLETE_DEBOUNCE_MS);
+  };
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    cancelAutocomplete();
+    onSubmit(event);
+  };
+
   return (
     <div className="relative z-20">
-      <form onSubmit={onSubmit}>
+      <form onSubmit={handleSubmit}>
         <label
           className="mb-1 block text-sm font-medium text-gray-700"
           htmlFor="city-search">
-          1. Pick a city
+          Pick a city
         </label>
         <div className="flex flex-col gap-2 sm:flex-row">
           <div className="relative min-w-0 flex-1">
@@ -33,7 +68,7 @@ export function CityPicker({
               id="city-search"
               className="focus-ring h-10 w-full rounded-md border border-gray-300 bg-white px-9 text-sm text-gray-900 placeholder:text-gray-400"
               value={query}
-              onChange={(event) => onQueryChange(event.target.value)}
+              onChange={(event) => handleQueryChange(event.target.value)}
               placeholder="Seattle, Washington"
               autoComplete="off"
             />
@@ -62,7 +97,10 @@ export function CityPicker({
                 key={`${city.latitude}-${city.longitude}-${city.displayName}`}
                 type="button"
                 role="option"
-                onClick={() => onSelectCity(city)}>
+                onClick={() => {
+                  cancelAutocomplete();
+                  onSelectCity(city);
+                }}>
                 <MapPinIcon className="mt-0.5 size-4 shrink-0 text-blue-600" />
                 <span>
                   <span className="block font-semibold">{city.cityName}</span>

@@ -1,6 +1,5 @@
-import { CityLocation, WcaCompetition } from './types';
-
-const WCA_API_ORIGIN = 'https://api.worldcubeassociation.org';
+import { CityLocation, WcaCompetition, WcaUser } from './types';
+import { WCA_API_ORIGIN } from './runtimeConfig';
 const PHOTON_ORIGIN = 'https://photon.komoot.io';
 const COMPETITIONS_PER_PAGE = 25;
 const COMPETITION_PAGE_BATCH_SIZE = 5;
@@ -33,10 +32,12 @@ interface PhotonResult {
 const requestJson = async <T>(
   url: string,
   signal?: AbortSignal,
+  accessToken?: string,
 ): Promise<T> => {
   const response = await fetch(url, {
     headers: {
       Accept: 'application/json',
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     },
     signal,
   });
@@ -109,6 +110,23 @@ export const geocodeCities = async (query: string, signal?: AbortSignal) => {
     });
 };
 
+interface WcaCompetitionPayload {
+  id: string;
+  name: string;
+  start_date: string;
+  end_date: string;
+  city: string;
+  venue?: string | null;
+  venue_address?: string | null;
+  country_iso2?: string | null;
+  event_ids?: string[] | null;
+  cancelled_at?: string | null;
+  latitude_degrees?: number | null;
+  longitude_degrees?: number | null;
+  url?: string | null;
+  website?: string | null;
+}
+
 const normalizeCompetition = ({
   cancelled_at,
   city,
@@ -124,21 +142,21 @@ const normalizeCompetition = ({
   venue,
   venue_address,
   website,
-}: WcaCompetition): WcaCompetition => ({
+}: WcaCompetitionPayload): WcaCompetition => ({
   id,
   name,
   start_date,
   end_date,
   city,
-  venue,
-  venue_address,
-  country_iso2,
+  venue: venue ?? '',
+  venue_address: venue_address ?? undefined,
+  country_iso2: country_iso2 ?? '',
   event_ids: event_ids ?? [],
   cancelled_at: cancelled_at ?? null,
   latitude_degrees: latitude_degrees ?? null,
   longitude_degrees: longitude_degrees ?? null,
   url: url || `https://www.worldcubeassociation.org/competitions/${id}`,
-  website: website || url,
+  website: website || url || '',
 });
 
 const getCompetitionCacheKey = (
@@ -321,4 +339,42 @@ export const fetchCompetitions = async ({
 
   competitionInFlight.set(cacheKey, request);
   return withAbort(request, signal);
+};
+
+interface WcaMeResponse {
+  me: WcaUser;
+  upcoming_competitions?: WcaCompetitionPayload[];
+  ongoing_competitions?: WcaCompetitionPayload[];
+}
+
+export const fetchMyCompetitions = async (
+  accessToken: string,
+  signal?: AbortSignal,
+) => {
+  const params = new URLSearchParams({
+    ongoing_competitions: 'true',
+    upcoming_competitions: 'true',
+  });
+  const response = await requestJson<WcaMeResponse>(
+    `${WCA_API_ORIGIN}/me?${params.toString()}`,
+    signal,
+    accessToken,
+  );
+  const seenIds = new Set<string>();
+  const competitions = [
+    ...(response.ongoing_competitions ?? []),
+    ...(response.upcoming_competitions ?? []),
+  ]
+    .map(normalizeCompetition)
+    .filter((competition) => {
+      if (seenIds.has(competition.id)) {
+        return false;
+      }
+
+      seenIds.add(competition.id);
+      return true;
+    })
+    .sort((first, second) => first.start_date.localeCompare(second.start_date));
+
+  return { competitions, user: response.me };
 };

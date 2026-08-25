@@ -22,8 +22,11 @@ describe('EventSummaryRow', () => {
     expect(screen.getByText('3×3×3 Cube')).toBeInTheDocument();
     expect(screen.getByText('7')).toBeInTheDocument();
     expect(
-      screen.getByText('Held 7 times in the last year'),
-    ).toBeInTheDocument();
+      screen.getByLabelText('7 times held in the last 12 months'),
+    ).toHaveStyle('background-color: rgb(249, 225, 216)');
+    expect(
+      screen.queryByText('Held 7 times in the last year'),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText(/search history/)).not.toBeInTheDocument();
     expect(screen.getByText('3 weeks ago')).toBeInTheDocument();
     expect(screen.getByText('Aug 1, 2026')).toBeInTheDocument();

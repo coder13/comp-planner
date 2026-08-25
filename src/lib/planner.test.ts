@@ -1,4 +1,4 @@
-import { getEventSummaries } from './planner';
+import { getEventSummaries, getSearchDateRange } from './planner';
 import { WcaCompetition } from './types';
 
 const competition = (overrides: Partial<WcaCompetition>): WcaCompetition => ({
@@ -51,6 +51,13 @@ describe('getEventSummaries', () => {
           longitude_degrees: -122.3,
           event_ids: ['555'],
         }),
+        competition({
+          id: 'SeattleFallOpen2026',
+          name: 'Seattle Fall Open 2026',
+          start_date: '2026-09-12',
+          end_date: '2026-09-13',
+          event_ids: ['pyram'],
+        }),
       ],
       { latitude: 47.6, longitude: -122.3 },
       '2026-08-24',
@@ -70,6 +77,16 @@ describe('getEventSummaries', () => {
     expect(results.eventGroups[1].events.map((event) => event.id)).toEqual([
       '333',
     ]);
+    expect(results.upcomingCompetitions.map((upcoming) => upcoming.id)).toEqual(
+      ['SeattleFallOpen2026'],
+    );
+  });
+
+  it('extends the WCA request by 12 months when upcoming competitions are included', () => {
+    expect(getSearchDateRange('2026-08-24', true)).toEqual({
+      endDate: '2027-08-24',
+      startDate: '2024-08-24',
+    });
   });
 
   it('filters competitions by state and PNW region', () => {

@@ -1,0 +1,1 @@
+export { CompetitionPlan } from './CompetitionPlan';

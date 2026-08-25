@@ -5,20 +5,43 @@ import { ArrowUpRightIcon, CalendarIcon } from '../Icons';
 interface EventSummaryRowProps {
   event: EventSummary;
   asOfDate: string;
+  maxHeldInLast12Months?: number;
   showCompetition?: boolean;
 }
+
+const UNDER_HELD_COLOR = [224, 244, 235] as const;
+const OVER_SATURATED_COLOR = [249, 225, 216] as const;
+
+const getHeldCountBackground = (
+  heldInLast12Months: number,
+  maxHeldInLast12Months: number,
+) => {
+  const ratio =
+    maxHeldInLast12Months > 0
+      ? Math.min(heldInLast12Months / maxHeldInLast12Months, 1)
+      : 0;
+  const color = UNDER_HELD_COLOR.map((underHeldChannel, index) =>
+    Math.round(
+      underHeldChannel +
+        (OVER_SATURATED_COLOR[index] - underHeldChannel) * ratio,
+    ),
+  );
+
+  return `rgb(${color.join(', ')})`;
+};
 
 export function EventSummaryRow({
   asOfDate,
   event,
+  maxHeldInLast12Months = event.heldInLast12Months,
   showCompetition = true,
 }: EventSummaryRowProps) {
   return (
     <article
       className={`grid gap-4 border-t border-line-light px-5 py-4 sm:items-center sm:px-6 ${
         showCompetition
-          ? 'sm:grid-cols-[minmax(0,1.1fr)_minmax(180px,1.4fr)_minmax(130px,0.5fr)]'
-          : 'sm:grid-cols-[minmax(0,1fr)_minmax(130px,0.5fr)]'
+          ? 'sm:grid-cols-[minmax(0,0.85fr)_minmax(180px,1.4fr)_minmax(130px,0.5fr)]'
+          : 'sm:grid-cols-[minmax(0,0.85fr)_minmax(130px,0.5fr)]'
       }`}>
       <div className="flex min-w-0 items-center gap-3">
         <span
@@ -29,10 +52,6 @@ export function EventSummaryRow({
           <h4 className="truncate text-base font-semibold text-ink">
             {event.label}
           </h4>
-          <p className="mt-1 text-xs text-ink/45">
-            Held {event.heldInLast12Months} time
-            {event.heldInLast12Months === 1 ? '' : 's'} in the last year
-          </p>
         </div>
       </div>
 
@@ -40,7 +59,7 @@ export function EventSummaryRow({
         <div className="min-w-0">
           {event.lastCompetitionUrl ? (
             <a
-              className="focus-ring inline-flex max-w-full items-center gap-1 text-sm font-semibold text-ink transition hover:text-coral-dark"
+              className="focus-ring inline-flex max-w-full items-center gap-1 text-xs font-semibold text-ink transition hover:text-coral-dark"
               href={event.lastCompetitionUrl}
               target="_blank"
               rel="noreferrer">
@@ -48,7 +67,7 @@ export function EventSummaryRow({
               <ArrowUpRightIcon className="size-3.5 shrink-0 opacity-45" />
             </a>
           ) : (
-            <p className="text-sm font-semibold text-ink">
+            <p className="text-xs font-semibold text-ink">
               {event.lastCompetitionName}
             </p>
           )}
@@ -66,7 +85,15 @@ export function EventSummaryRow({
         </div>
       )}
 
-      <div className="min-w-0 text-right">
+      <div
+        className="-my-4 flex min-w-0 items-center justify-end px-3 py-4 text-right"
+        aria-label={`${event.heldInLast12Months} times held in the last 12 months`}
+        style={{
+          backgroundColor: getHeldCountBackground(
+            event.heldInLast12Months,
+            maxHeldInLast12Months,
+          ),
+        }}>
         <span className="text-base font-semibold text-ink">
           {event.heldInLast12Months}
         </span>

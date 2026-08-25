@@ -6,11 +6,16 @@ import { ArrowUpRightIcon, CalendarIcon } from '../Icons';
 interface CompetitionEventGroupProps {
   asOfDate: string;
   group: EventGroup;
+  maxHeldInLast12Months?: number;
 }
 
 export function CompetitionEventGroup({
   asOfDate,
   group,
+  maxHeldInLast12Months = Math.max(
+    0,
+    ...group.events.map((event) => event.heldInLast12Months),
+  ),
 }: CompetitionEventGroupProps) {
   return (
     <article className="overflow-hidden border-t border-line-light first:border-t-0">
@@ -20,7 +25,7 @@ export function CompetitionEventGroup({
         </p>
         {group.competitionUrl ? (
           <a
-            className="focus-ring mt-2 inline-flex max-w-full items-center gap-2 text-lg font-semibold text-ink transition hover:text-coral-dark"
+            className="focus-ring mt-2 inline-flex max-w-full items-center gap-2 text-base font-semibold text-ink transition hover:text-coral-dark"
             href={group.competitionUrl}
             target="_blank"
             rel="noreferrer">
@@ -28,7 +33,7 @@ export function CompetitionEventGroup({
             <ArrowUpRightIcon className="size-4 shrink-0 opacity-45" />
           </a>
         ) : (
-          <h3 className="mt-2 text-lg font-semibold text-ink">
+          <h3 className="mt-2 text-base font-semibold text-ink">
             {group.competitionName}
           </h3>
         )}
@@ -46,6 +51,7 @@ export function CompetitionEventGroup({
             asOfDate={asOfDate}
             event={event}
             key={event.id}
+            maxHeldInLast12Months={maxHeldInLast12Months}
             showCompetition={false}
           />
         ))}

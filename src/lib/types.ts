@@ -25,6 +25,17 @@ export interface WcaCompetition {
   cancelled_at: string | null;
 }
 
+export interface WcaUser {
+  id: number;
+  name: string;
+  wca_id: string | null;
+  country_iso2?: string | null;
+  avatar?: {
+    thumb_url?: string | null;
+    url?: string | null;
+  } | null;
+}
+
 export interface EventSummary {
   id: string;
   label: string;
@@ -49,4 +60,24 @@ export interface EventSummaryResults {
   events: EventSummary[];
   competitionCount: number;
   eventGroups: EventGroup[];
+  upcomingCompetitions: UpcomingCompetitionSummary[];
+}
+
+export interface UpcomingCompetitionSummary {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  city: string;
+  url: string;
+  eventIds: string[];
+  distanceMiles: number;
+}
+
+export interface CompetitionEventInsight {
+  eventId: string;
+  label: string;
+  lastHeldDate: string | null;
+  heldInLast12Months: number;
+  totalCompetitionCount: number;
 }

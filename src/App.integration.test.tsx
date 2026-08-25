@@ -77,11 +77,26 @@ describe('Seattle event search', () => {
         }) as Promise<Response>;
       }
 
-      if (url.includes('api.worldcubeassociation.org')) {
+      if (
+        url.includes('api.worldcubeassociation.org') ||
+        url.includes('staging.worldcubeassociation.org')
+      ) {
+        if (url.includes('/me?')) {
+          return responseFor({
+            me: {
+              id: 1,
+              name: 'WCA User',
+              wca_id: '2020USER01',
+            },
+            ongoing_competitions: [competition({})],
+            upcoming_competitions: [],
+          }) as Promise<Response>;
+        }
+
         wcaRequestCount += 1;
         const page = new URL(url).searchParams.get('page');
         if (page === '1') {
-          return responseFor([
+          const competitions = [
             competition({}),
             competition({
               id: 'TacomaSpringOpen2026',
@@ -93,7 +108,21 @@ describe('Seattle event search', () => {
               latitude_degrees: 47.2529,
               longitude_degrees: -122.4443,
             }),
-          ]) as Promise<Response>;
+          ];
+
+          if (new URL(url).searchParams.get('end') === '2027-08-24') {
+            competitions.push(
+              competition({
+                id: 'SeattleFallOpen2026',
+                name: 'Seattle Fall Open 2026',
+                start_date: '2026-09-12',
+                end_date: '2026-09-13',
+                event_ids: ['333', 'pyram'],
+              }),
+            );
+          }
+
+          return responseFor(competitions) as Promise<Response>;
         }
 
         return responseFor([]) as Promise<Response>;
@@ -113,7 +142,7 @@ describe('Seattle event search', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByRole('heading', { name: 'Events around Seattle' }),
+        screen.getByRole('region', { name: 'Search results' }),
       ).toBeInTheDocument();
     });
 
@@ -129,7 +158,7 @@ describe('Seattle event search', () => {
     );
     await user.click(screen.getByRole('button', { name: 'By competition' }));
     expect(
-      screen.getByRole('heading', { name: 'Events grouped by competition' }),
+      screen.getByRole('region', { name: 'Event results' }),
     ).toBeInTheDocument();
     expect(
       screen.getAllByRole('columnheader', {
@@ -150,5 +179,55 @@ describe('Seattle event search', () => {
     });
     expect(screen.queryByText('Pyraminx')).not.toBeInTheDocument();
     expect(geocoderRequestCount).toBe(geocoderRequestsAfterInitialLoad);
+  });
+
+  it('loads a signed-in competition and shows its event plan', async () => {
+    const user = userEvent.setup();
+    window.localStorage.setItem('comp-planner:wca-access-token', 'test-token');
+    window.localStorage.setItem(
+      'comp-planner:wca-access-token-expires-at',
+      String(Date.now() + 60_000),
+    );
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('My competitions')).toBeInTheDocument();
+    });
+
+    await user.selectOptions(
+      screen.getByLabelText('My competitions'),
+      'SeattleSummerOpen2026',
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Competition plan')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Events in this competition')).toBeInTheDocument();
+    expect(screen.getByText('Suggested events')).toBeInTheDocument();
+  });
+
+  it('shows upcoming competitions when the toggle is enabled', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('region', { name: 'Search results' }),
+      ).toBeInTheDocument();
+    });
+
+    await user.click(
+      screen.getByRole('checkbox', {
+        name: 'Include upcoming competitions',
+      }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Search' }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', { name: 'Upcoming competitions' }),
+      ).toBeInTheDocument();
+    });
+    expect(screen.getByText('Seattle Fall Open 2026')).toBeInTheDocument();
   });
 });

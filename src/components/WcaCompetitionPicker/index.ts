@@ -1,0 +1,1 @@
+export { WcaCompetitionPicker } from './WcaCompetitionPicker';

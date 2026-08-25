@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { CityPicker } from './CityPicker';
 
 describe('CityPicker', () => {
@@ -7,6 +7,7 @@ describe('CityPicker', () => {
       <CityPicker
         cities={[]}
         isBusy={false}
+        onLookup={jest.fn()}
         onQueryChange={jest.fn()}
         onSelectCity={jest.fn()}
         onSubmit={jest.fn()}
@@ -14,7 +15,7 @@ describe('CityPicker', () => {
       />,
     );
 
-    expect(screen.getByLabelText('1. Pick a city')).toHaveValue(
+    expect(screen.getByLabelText('Pick a city')).toHaveValue(
       'Seattle, Washington',
     );
     expect(screen.getByRole('button', { name: 'Find city' })).toBeEnabled();
@@ -34,6 +35,7 @@ describe('CityPicker', () => {
           },
         ]}
         isBusy={false}
+        onLookup={jest.fn()}
         onQueryChange={jest.fn()}
         onSelectCity={jest.fn()}
         onSubmit={jest.fn()}
@@ -44,5 +46,38 @@ describe('CityPicker', () => {
     expect(screen.getByText('Choose a city')).toBeInTheDocument();
     expect(screen.getByRole('listbox')).toHaveClass('absolute');
     expect(screen.getByRole('option', { name: /Seattle/ })).toBeInTheDocument();
+  });
+
+  it('debounces city autocomplete suggestions', () => {
+    jest.useFakeTimers();
+    const onLookup = jest.fn();
+
+    render(
+      <CityPicker
+        cities={[]}
+        isBusy={false}
+        onLookup={onLookup}
+        onQueryChange={jest.fn()}
+        onSelectCity={jest.fn()}
+        onSubmit={jest.fn()}
+        query=""
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText('Pick a city'), {
+      target: { value: 'Tacoma' },
+    });
+    expect(onLookup).not.toHaveBeenCalled();
+
+    act(() => {
+      jest.advanceTimersByTime(319);
+    });
+    expect(onLookup).not.toHaveBeenCalled();
+
+    act(() => {
+      jest.advanceTimersByTime(1);
+    });
+    expect(onLookup).toHaveBeenCalledWith('Tacoma');
+    jest.useRealTimers();
   });
 });

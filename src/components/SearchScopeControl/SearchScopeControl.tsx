@@ -37,7 +37,7 @@ export function SearchScopeControl({
           <span className="flex size-7 items-center justify-center rounded-md bg-blue-50 text-blue-600">
             <CompassIcon className="size-4" />
           </span>
-          2. Pick search area
+          Search area
         </div>
         <div
           className="inline-flex rounded-md border border-gray-300 bg-gray-50 p-0.5"
@@ -86,7 +86,7 @@ export function SearchScopeControl({
         <div className="mt-3 space-y-3">
           <div className="flex items-end gap-2">
             <label
-              className="block min-w-0 flex-1 text-sm font-medium text-gray-700"
+              className="block w-full max-w-56 text-sm font-medium text-gray-700"
               htmlFor="radius-miles">
               Radius
               <input

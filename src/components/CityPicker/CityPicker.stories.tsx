@@ -8,6 +8,7 @@ const meta = {
   args: {
     cities: [],
     isBusy: false,
+    onLookup: fn(),
     onQueryChange: fn(),
     onSelectCity: fn(),
     onSubmit: fn(),

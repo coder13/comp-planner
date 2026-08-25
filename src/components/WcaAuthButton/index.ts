@@ -1,0 +1,1 @@
+export { WcaAuthButton } from './WcaAuthButton';
