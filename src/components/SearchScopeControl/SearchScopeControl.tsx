@@ -37,13 +37,13 @@ export function SearchScopeControl({
   return (
     <section aria-label="Search area">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-            <span className="flex size-7 items-center justify-center rounded-md bg-blue-50 text-blue-600">
-              <CompassIcon className="size-4" />
-            </span>
-            Search area
-          </div>
+        <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+          <span className="flex size-7 items-center justify-center rounded-md bg-blue-50 text-blue-600">
+            <CompassIcon className="size-4" />
+          </span>
+          Search area
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
           <label className="inline-flex items-center gap-2 text-sm text-gray-700">
             <input
               className="size-4 accent-blue-600"
@@ -56,47 +56,47 @@ export function SearchScopeControl({
             />
             Same country
           </label>
-        </div>
-        <div
-          className="inline-flex rounded-md border border-gray-300 bg-gray-50 p-0.5"
-          role="group"
-          aria-label="Search area type">
-          <button
-            className={`focus-ring rounded px-2.5 py-1 text-xs transition ${
-              mode === 'radius'
-                ? 'bg-blue-600 font-medium text-white shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-            type="button"
-            aria-pressed={mode === 'radius'}
-            onClick={() => onModeChange('radius')}>
-            Radius
-          </button>
-          <button
-            className={`focus-ring rounded px-2.5 py-1 text-xs transition disabled:cursor-not-allowed disabled:opacity-40 ${
-              mode === 'state'
-                ? 'bg-blue-600 font-medium text-white shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-            type="button"
-            aria-pressed={mode === 'state'}
-            disabled={!stateName}
-            onClick={() => onModeChange('state')}>
-            Entire state
-          </button>
-          {region && (
+          <div
+            className="inline-flex rounded-md border border-gray-300 bg-gray-50 p-0.5"
+            role="group"
+            aria-label="Search area type">
             <button
               className={`focus-ring rounded px-2.5 py-1 text-xs transition ${
-                mode === 'region'
+                mode === 'radius'
                   ? 'bg-blue-600 font-medium text-white shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
               type="button"
-              aria-pressed={mode === 'region'}
-              onClick={() => onModeChange('region')}>
-              {region.name}
+              aria-pressed={mode === 'radius'}
+              onClick={() => onModeChange('radius')}>
+              Radius
             </button>
-          )}
+            <button
+              className={`focus-ring rounded px-2.5 py-1 text-xs transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                mode === 'state'
+                  ? 'bg-blue-600 font-medium text-white shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              type="button"
+              aria-pressed={mode === 'state'}
+              disabled={!stateName}
+              onClick={() => onModeChange('state')}>
+              Entire state
+            </button>
+            {region && (
+              <button
+                className={`focus-ring rounded px-2.5 py-1 text-xs transition ${
+                  mode === 'region'
+                    ? 'bg-blue-600 font-medium text-white shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                type="button"
+                aria-pressed={mode === 'region'}
+                onClick={() => onModeChange('region')}>
+                {region.name}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
