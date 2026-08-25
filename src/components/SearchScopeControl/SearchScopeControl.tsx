@@ -19,7 +19,7 @@ interface SearchScopeControlProps {
 
 const MIN_RADIUS_MILES = 1;
 const MAX_RADIUS_MILES = 1000;
-const RADIUS_MAP_DEBOUNCE_MS = 120;
+const RADIUS_MAP_DEBOUNCE_MS = 400;
 
 const getMapRadius = (radiusMiles: string) => {
   const numericRadius = Number(radiusMiles);

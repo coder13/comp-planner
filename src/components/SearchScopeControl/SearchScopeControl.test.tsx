@@ -33,7 +33,7 @@ describe('SearchScopeControl', () => {
     expect(onRadiusChange).toHaveBeenCalledWith('100');
   });
 
-  it('debounces radius updates passed to the map by 120ms', () => {
+  it('debounces radius updates passed to the map by 400ms', () => {
     jest.useFakeTimers();
     const searchAreaMap = SearchAreaMap as jest.Mock;
     const onRadiusChange = jest.fn();
@@ -60,7 +60,7 @@ describe('SearchScopeControl', () => {
     expect(
       searchAreaMap.mock.calls[searchAreaMap.mock.calls.length - 1][0],
     ).toEqual(expect.objectContaining({ radiusMiles: 50 }));
-    act(() => jest.advanceTimersByTime(119));
+    act(() => jest.advanceTimersByTime(399));
     expect(
       searchAreaMap.mock.calls[searchAreaMap.mock.calls.length - 1][0],
     ).toEqual(expect.objectContaining({ radiusMiles: 50 }));
