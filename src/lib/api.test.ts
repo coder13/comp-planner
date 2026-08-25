@@ -195,6 +195,46 @@ describe('reverseGeocodeLocation', () => {
       expect.anything(),
     );
   });
+
+  it('uses a nearby Photon result for a map point', async () => {
+    globalThis.fetch = jest.fn().mockResolvedValue({
+      json: async () => ({
+        features: [
+          {
+            geometry: { coordinates: [-121.8694785, 48.4163706] },
+            properties: {
+              country: 'United States',
+              countrycode: 'US',
+              county: 'Skagit',
+              name: 'Deforest Ridge Road',
+              state: 'Washington',
+              type: 'street',
+            },
+          },
+        ],
+      }),
+      ok: true,
+      status: 200,
+    }) as typeof fetch;
+
+    const location = await reverseGeocodeLocation(48.42604, -121.86265);
+
+    expect(location).toEqual({
+      cityName: 'Skagit',
+      countryCode: 'US',
+      countryName: 'United States',
+      displayName: 'Skagit, Washington, United States',
+      latitude: 48.4163706,
+      longitude: -121.8694785,
+      stateName: 'Washington',
+    });
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect.stringContaining(
+        '/reverse?lat=48.42604&lon=-121.86265&radius=1000',
+      ),
+      expect.anything(),
+    );
+  });
 });
 
 describe('searchCompetitions', () => {

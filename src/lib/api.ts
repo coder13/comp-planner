@@ -28,6 +28,7 @@ interface PhotonResult {
     city?: string;
     country?: string;
     countrycode?: string;
+    county?: string;
     housenumber?: string;
     name?: string;
     state?: string;
@@ -153,22 +154,31 @@ export const reverseGeocodeLocation = async (
   const params = new URLSearchParams({
     lat: String(latitude),
     lon: String(longitude),
+    radius: '1000',
   });
   const response = await requestJson<{ features: PhotonResult[] }>(
     `${PHOTON_ORIGIN}/reverse?${params.toString()}`,
     signal,
   );
-  const result = response.features[0];
+  const result = response.features.find(
+    (feature) => feature.properties.countrycode,
+  );
 
   if (!result) {
     return null;
   }
 
   const { properties } = result;
+  const countryCode = properties.countrycode;
+  if (!countryCode) {
+    return null;
+  }
+
   const cityName =
     properties.city ??
     properties.town ??
     properties.village ??
+    properties.county ??
     properties.name ??
     'Selected location';
   const address = [properties.housenumber, properties.street]
@@ -180,7 +190,7 @@ export const reverseGeocodeLocation = async (
 
   return {
     cityName,
-    countryCode: properties.countrycode?.toUpperCase() ?? '',
+    countryCode: countryCode.toUpperCase(),
     countryName: properties.country ?? '',
     displayName,
     ...(address ? { address } : {}),
