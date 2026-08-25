@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { CompassIcon } from '../Icons';
 import { SearchRegion, SearchScopeMode } from '../../lib/planner';
 import { SearchAreaMap } from '../SearchAreaMap';
@@ -20,6 +21,14 @@ interface SearchScopeControlProps {
 
 const MIN_RADIUS_MILES = 1;
 const MAX_RADIUS_MILES = 1000;
+const RADIUS_MAP_DEBOUNCE_MS = 80;
+
+const getMapRadius = (radiusMiles: string) => {
+  const numericRadius = Number(radiusMiles);
+  return Number.isFinite(numericRadius) && numericRadius > 0
+    ? numericRadius
+    : 50;
+};
 
 export function SearchScopeControl({
   clipToCountry,
@@ -36,9 +45,15 @@ export function SearchScopeControl({
   onRadiusChange,
   onSameCountryOnlyChange,
 }: SearchScopeControlProps) {
-  const numericRadius = Number(radiusMiles);
-  const mapRadius =
-    Number.isFinite(numericRadius) && numericRadius > 0 ? numericRadius : 50;
+  const [mapRadius, setMapRadius] = useState(() => getMapRadius(radiusMiles));
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setMapRadius(getMapRadius(radiusMiles));
+    }, RADIUS_MAP_DEBOUNCE_MS);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [radiusMiles]);
 
   return (
     <section aria-label="Search area">

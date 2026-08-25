@@ -293,6 +293,7 @@ export function SearchAreaMap({
             [latitude + latitudeDelta, longitude + longitudeDelta],
           ];
     let circle: L.Circle | null = null;
+    let radiusOutline: L.Circle | null = null;
 
     const addUnclippedCircle = () => {
       if (circle || radiusMiles === undefined) {
@@ -305,8 +306,21 @@ export function SearchAreaMap({
       }).addTo(map);
     };
 
+    const addRadiusOutline = () => {
+      if (radiusOutline || radiusMiles === undefined) {
+        return;
+      }
+
+      radiusOutline = L.circle(center, {
+        ...radiusStyle,
+        fillOpacity: 0,
+      }).addTo(map);
+    };
+
     if (!clipToCountry || !countryCode || radiusMiles === undefined) {
       addUnclippedCircle();
+    } else {
+      addRadiusOutline();
     }
 
     L.circleMarker(center, {
@@ -380,7 +394,11 @@ export function SearchAreaMap({
         }
 
         L.geoJSON(clippedFeature, {
-          style: radiusStyle,
+          style: {
+            ...radiusStyle,
+            color: 'transparent',
+            weight: 0,
+          },
         }).addTo(map);
       });
     }
