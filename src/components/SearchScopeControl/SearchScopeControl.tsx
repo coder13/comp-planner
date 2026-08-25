@@ -11,6 +11,7 @@ interface SearchScopeControlProps {
   sameCountryOnly: boolean;
   stateName?: string;
   onModeChange: (mode: SearchScopeMode) => void;
+  onLocationSelect: (latitude: number, longitude: number) => void;
   onRadiusChange: (radiusMiles: string) => void;
   onSameCountryOnlyChange: (sameCountryOnly: boolean) => void;
 }
@@ -27,6 +28,7 @@ export function SearchScopeControl({
   sameCountryOnly,
   stateName,
   onModeChange,
+  onLocationSelect,
   onRadiusChange,
   onSameCountryOnlyChange,
 }: SearchScopeControlProps) {
@@ -124,6 +126,7 @@ export function SearchScopeControl({
             <SearchAreaMap
               latitude={latitude}
               longitude={longitude}
+              onLocationSelect={onLocationSelect}
               radiusMiles={mapRadius}
             />
           )}
@@ -148,6 +151,7 @@ export function SearchScopeControl({
               <SearchAreaMap
                 latitude={latitude}
                 longitude={longitude}
+                onLocationSelect={onLocationSelect}
                 stateName={stateName}
               />
             )}

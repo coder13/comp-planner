@@ -4,6 +4,7 @@ import * as L from 'leaflet';
 interface SearchAreaMapProps {
   latitude: number;
   longitude: number;
+  onLocationSelect?: (latitude: number, longitude: number) => void;
   radiusMiles?: number;
   stateName?: string;
 }
@@ -44,6 +45,7 @@ const loadStateBoundaries = () => {
 export function SearchAreaMap({
   latitude,
   longitude,
+  onLocationSelect,
   radiusMiles,
   stateName,
 }: SearchAreaMapProps) {
@@ -60,6 +62,14 @@ export function SearchAreaMap({
       attributionControl: true,
       zoomControl: true,
     }).setView(center, 8);
+
+    const handleMapClick = (event: L.LeafletMouseEvent) => {
+      onLocationSelect?.(event.latlng.lat, event.latlng.lng);
+    };
+
+    if (onLocationSelect) {
+      map.on('click', handleMapClick);
+    }
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors',
@@ -126,18 +136,24 @@ export function SearchAreaMap({
 
     return () => {
       isActive = false;
+      if (onLocationSelect) {
+        map.off('click', handleMapClick);
+      }
       map.remove();
     };
-  }, [latitude, longitude, radiusMiles, stateName]);
+  }, [latitude, longitude, onLocationSelect, radiusMiles, stateName]);
 
+  const clickHint = onLocationSelect ? '. Click to choose a search center' : '';
   const ariaLabel = stateName
-    ? `Map showing the ${stateName} state boundary`
-    : `Map showing a ${radiusMiles}-mile search radius`;
+    ? `Map showing the ${stateName} state boundary${clickHint}`
+    : `Map showing a ${radiusMiles}-mile search radius${clickHint}`;
 
   return (
     <div
       ref={mapElementRef}
-      className="h-64 w-full overflow-hidden rounded-md border border-gray-200 bg-blue-50"
+      className={`h-64 w-full overflow-hidden rounded-md border border-gray-200 bg-blue-50 ${
+        onLocationSelect ? 'cursor-crosshair' : ''
+      }`}
       role="img"
       aria-label={ariaLabel}
     />

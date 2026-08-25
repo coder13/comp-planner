@@ -27,9 +27,13 @@ interface PhotonResult {
     city?: string;
     country?: string;
     countrycode?: string;
+    housenumber?: string;
     name?: string;
     state?: string;
+    street?: string;
+    town?: string;
     type?: string;
+    village?: string;
   };
 }
 
@@ -112,6 +116,51 @@ export const geocodeCities = async (query: string, signal?: AbortSignal) => {
       seenCities.add(identity);
       return true;
     });
+};
+
+export const reverseGeocodeLocation = async (
+  latitude: number,
+  longitude: number,
+  signal?: AbortSignal,
+) => {
+  const params = new URLSearchParams({
+    lat: String(latitude),
+    lon: String(longitude),
+  });
+  const response = await requestJson<{ features: PhotonResult[] }>(
+    `${PHOTON_ORIGIN}/reverse?${params.toString()}`,
+    signal,
+  );
+  const result = response.features[0];
+
+  if (!result) {
+    return null;
+  }
+
+  const { properties } = result;
+  const cityName =
+    properties.city ??
+    properties.town ??
+    properties.village ??
+    properties.name ??
+    'Selected location';
+  const address = [properties.housenumber, properties.street]
+    .filter(Boolean)
+    .join(' ');
+  const displayName = [address, cityName, properties.state, properties.country]
+    .filter(Boolean)
+    .join(', ');
+
+  return {
+    cityName,
+    countryCode: properties.countrycode?.toUpperCase() ?? '',
+    countryName: properties.country ?? '',
+    displayName,
+    ...(address ? { address } : {}),
+    latitude: result.geometry.coordinates[1],
+    longitude: result.geometry.coordinates[0],
+    stateName: properties.state,
+  } satisfies CityLocation;
 };
 
 interface WcaCompetitionPayload {

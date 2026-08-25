@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 import { SearchAreaMap } from './SearchAreaMap';
 
 const meta = {
@@ -7,6 +8,7 @@ const meta = {
   args: {
     latitude: 47.6062,
     longitude: -122.3321,
+    onLocationSelect: fn(),
     radiusMiles: 50,
   },
   decorators: [

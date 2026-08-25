@@ -1,4 +1,9 @@
-import { fetchMyCompetitions, geocodeCities, searchCompetitions } from './api';
+import {
+  fetchMyCompetitions,
+  geocodeCities,
+  reverseGeocodeLocation,
+  searchCompetitions,
+} from './api';
 
 const photonFeature = (city: string, longitude: number, latitude: number) => ({
   geometry: { coordinates: [longitude, latitude] as [number, number] },
@@ -97,6 +102,53 @@ describe('fetchMyCompetitions', () => {
           Authorization: 'Bearer test-token',
         }),
       }),
+    );
+  });
+});
+
+describe('reverseGeocodeLocation', () => {
+  const originalFetch = globalThis.fetch;
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it('turns a map point into a searchable location', async () => {
+    globalThis.fetch = jest.fn().mockResolvedValue({
+      json: async () => ({
+        features: [
+          {
+            geometry: { coordinates: [-122.3321, 47.6062] },
+            properties: {
+              city: 'Seattle',
+              country: 'United States',
+              countrycode: 'us',
+              housenumber: '1',
+              state: 'Washington',
+              street: 'Test Street',
+            },
+          },
+        ],
+      }),
+      ok: true,
+      status: 200,
+    }) as typeof fetch;
+
+    const location = await reverseGeocodeLocation(47.6062, -122.3321);
+
+    expect(location).toEqual({
+      address: '1 Test Street',
+      cityName: 'Seattle',
+      countryCode: 'US',
+      countryName: 'United States',
+      displayName: '1 Test Street, Seattle, Washington, United States',
+      latitude: 47.6062,
+      longitude: -122.3321,
+      stateName: 'Washington',
+    });
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/reverse?lat=47.6062&lon=-122.3321'),
+      expect.anything(),
     );
   });
 });

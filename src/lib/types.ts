@@ -3,6 +3,7 @@ export interface CityLocation {
   countryCode: string;
   countryName: string;
   displayName: string;
+  address?: string;
   latitude: number;
   longitude: number;
   stateName?: string;

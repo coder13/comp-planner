@@ -12,6 +12,7 @@ describe('SearchScopeControl', () => {
         region={null}
         sameCountryOnly={true}
         onModeChange={jest.fn()}
+        onLocationSelect={jest.fn()}
         onRadiusChange={onRadiusChange}
         onSameCountryOnlyChange={jest.fn()}
       />,
@@ -36,6 +37,7 @@ describe('SearchScopeControl', () => {
         sameCountryOnly={true}
         stateName="Washington"
         onModeChange={jest.fn()}
+        onLocationSelect={jest.fn()}
         onRadiusChange={jest.fn()}
         onSameCountryOnlyChange={jest.fn()}
       />,
@@ -57,6 +59,7 @@ describe('SearchScopeControl', () => {
         region={null}
         sameCountryOnly={true}
         onModeChange={jest.fn()}
+        onLocationSelect={jest.fn()}
         onRadiusChange={jest.fn()}
         onSameCountryOnlyChange={onSameCountryOnlyChange}
       />,

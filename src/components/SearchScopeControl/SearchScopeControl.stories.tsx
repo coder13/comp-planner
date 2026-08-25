@@ -18,6 +18,7 @@ const meta = {
     longitude: -122.3321,
     sameCountryOnly: true,
     onModeChange: fn(),
+    onLocationSelect: fn(),
     onRadiusChange: fn(),
     onSameCountryOnlyChange: fn(),
   },

@@ -13,6 +13,7 @@ import {
   fetchCompetitions,
   fetchMyCompetitions,
   geocodeCities,
+  reverseGeocodeLocation,
   searchCompetitions,
 } from './lib/api';
 import {
@@ -87,6 +88,7 @@ function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('event');
   const [isFindingCity, setIsFindingCity] = useState(false);
   const [isFindingCompetition, setIsFindingCompetition] = useState(false);
+  const [isFindingLocation, setIsFindingLocation] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [wcaUser, setWcaUser] = useState<WcaUser | null>(null);
   const [wcaCompetitions, setWcaCompetitions] = useState<WcaCompetition[]>([]);
@@ -98,6 +100,7 @@ function App() {
   const controllerRef = useRef<AbortController | null>(null);
   const cityLookupControllerRef = useRef<AbortController | null>(null);
   const competitionLookupControllerRef = useRef<AbortController | null>(null);
+  const locationLookupControllerRef = useRef<AbortController | null>(null);
   const wcaControllerRef = useRef<AbortController | null>(null);
 
   const loadResults = useCallback(
@@ -232,6 +235,7 @@ function App() {
       isActive = false;
       cityController.abort();
       competitionLookupControllerRef.current?.abort();
+      locationLookupControllerRef.current?.abort();
       controllerRef.current?.abort();
     };
   }, [loadResults]);
@@ -316,10 +320,12 @@ function App() {
       nextQuery.trim() !== selectedCity.cityName &&
       nextQuery.trim() !== selectedCity.displayName
     ) {
+      locationLookupControllerRef.current?.abort();
       controllerRef.current?.abort();
       setSelectedCity(null);
       setSelectedWcaCompetition(null);
       setSummaryResults(null);
+      setIsFindingLocation(false);
       setIsLoading(false);
     }
   };
@@ -442,6 +448,7 @@ function App() {
   const handleCitySelect = (city: CityLocation) => {
     cityLookupControllerRef.current?.abort();
     competitionLookupControllerRef.current?.abort();
+    locationLookupControllerRef.current?.abort();
     controllerRef.current?.abort();
     setQuery(city.cityName);
     setCompetitionQuery('');
@@ -452,8 +459,67 @@ function App() {
     setSummaryResults(null);
     setError(null);
     setIsFindingCity(false);
+    setIsFindingLocation(false);
     setIsLoading(false);
   };
+
+  const handleMapLocationSelect = useCallback(
+    async (latitude: number, longitude: number) => {
+      locationLookupControllerRef.current?.abort();
+      controllerRef.current?.abort();
+      const locationController = new AbortController();
+      locationLookupControllerRef.current = locationController;
+      const coordinateLabel = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+
+      setScopeMode('radius');
+      setQuery(coordinateLabel);
+      setCompetitionQuery('');
+      setCompetitionOptions([]);
+      setSelectedWcaCompetition(null);
+      setCityOptions([]);
+      setSummaryResults(null);
+      setError(null);
+      setIsFindingLocation(true);
+      setIsLoading(false);
+      setSelectedCity({
+        cityName: 'Selected location',
+        countryCode: '',
+        countryName: '',
+        displayName: coordinateLabel,
+        latitude,
+        longitude,
+      });
+
+      try {
+        const location = await reverseGeocodeLocation(
+          latitude,
+          longitude,
+          locationController.signal,
+        );
+
+        if (!locationController.signal.aborted && location) {
+          setQuery(location.displayName);
+          setSelectedCity({ ...location, latitude, longitude });
+        }
+      } catch (caughtError) {
+        if (
+          caughtError instanceof DOMException &&
+          caughtError.name === 'AbortError'
+        ) {
+          return;
+        }
+
+        setError(
+          'The map location could not be identified. Choose another point.',
+        );
+      } finally {
+        if (!locationController.signal.aborted) {
+          setIsFindingLocation(false);
+        }
+      }
+    },
+    [],
+  );
 
   const handleWcaLogin = () => {
     try {
@@ -557,7 +623,7 @@ function App() {
     );
   };
 
-  const isBusy = isFindingCity || isLoading;
+  const isBusy = isFindingCity || isFindingLocation || isLoading;
   const selectedRegion = getRegionForState(selectedCity?.stateName);
   const maxHeldInLast12Months = summaryResults
     ? Math.max(
@@ -656,6 +722,7 @@ function App() {
               latitude={selectedCity?.latitude}
               mode={scopeMode}
               longitude={selectedCity?.longitude}
+              onLocationSelect={handleMapLocationSelect}
               radiusMiles={radiusMiles}
               region={selectedRegion}
               sameCountryOnly={sameCountryOnly}
@@ -689,10 +756,12 @@ function App() {
           </div>
         )}
 
-        {isLoading && (
+        {(isLoading || isFindingLocation) && (
           <div className="mt-3 flex items-center gap-3 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 shadow-sm">
             <span className="size-4 animate-spin rounded-full border-2 border-gray-200 border-t-blue-600" />
-            Loading competitions from the WCA data set…
+            {isFindingLocation
+              ? 'Looking up the selected map location…'
+              : 'Loading competitions from the WCA data set…'}
           </div>
         )}
 
